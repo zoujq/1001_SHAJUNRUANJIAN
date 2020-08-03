@@ -1,0 +1,283 @@
+C51 COMPILER V9.56.0.0   UART                                                              08/03/2020 17:20:28 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN .\hex\uart.obj
+COMPILER INVOKED BY: F:\Keil\C51\BIN\C51.exe Library\Sources\uart.c OMF2 OPTIMIZE(9,SIZE) BROWSE DEBUG PRINT(.\lst\uart.
+                    -lst) TABS(2) OBJECT(.\hex\uart.obj)
+
+line level    source
+
+   1          #ifndef _UART_C_
+   2          #define _UART_C_
+   3          #include "ca51f_config.h"
+   4          #include "includes\ca51f3sfr.h"
+   5          #include "includes\ca51f3xsfr.h"
+   6          #include "includes\gpiodef_f3.h"
+   7          
+   8          #include "Library\includes\delay.h"
+   9          #include "Library\includes\uart.h"
+  10          #include "Library\includes\system_clock.h"
+  11          #include "Library\Includes\rtc.h" 
+  12          #include "Library\Includes\pwm.h" 
+  13          #include "includes\system.h"
+  14          #include "Library\includes\adc.h"
+  15          #include "Library\includes\wdt.h"
+  16          
+  17          #include <intrins.h>
+  18          #include <string.h>
+  19          #include <stdarg.h>
+  20          #include <stdlib.h>
+  21          #include <stdio.h>
+  22          #include <absacc.h>
+  23          
+  24          /*********************************************************************************************************
+             -************/
+  25          /*********************************************************************************************************
+             -************/
+  26          #ifdef UART0_EN
+              void Uart0_Initial(unsigned long int baudrate)
+              {
+                unsigned int value_temp;
+              
+                P31F = P31_UART0_RX_SETTING;
+                P30F = P30_UART0_TX_SETTING;
+                
+                uart0_send.head=0;
+                uart0_send.tail=0;
+                uart0_rev.head=0;
+                uart0_rev.tail=0;
+                uart0_tx_flag=0;
+              
+              /*********************************************************************************************************
+             -***************/
+              //TIMER2作为UART0的波特率发生器
+                value_temp = 0x10000 - FOSC/(baudrate*32);
+                T2CON =   0x24;
+                T2CH  =   (unsigned char)(value_temp>>8);
+                T2CL  =   (unsigned char)(value_temp);
+                TH2   =   (unsigned char)(value_temp>>8);
+                TL2   =   (unsigned char)(value_temp);; 
+                TR2   =   1;
+              /*********************************************************************************************************
+             -***************/  
+              
+C51 COMPILER V9.56.0.0   UART                                                              08/03/2020 17:20:28 PAGE 2   
+
+              
+              /*********************************************************************************************************
+             -***************/
+              //TIMER1作为UART0的波特率发生器
+              
+              //  TMOD = (TMOD&0xCF)|0x20;
+              //  TH1 = 0xff;   //19200
+              //  TL1 = 0xff;
+              //  ET1=0;
+              //  TR1=1;    
+              //  PCON |= 0x80;   
+              /*********************************************************************************************************
+             -***************/
+              
+              
+                S0CON = 0x50;  
+                ES0 = 1;
+              }
+              void Uart0_PutChar(unsigned char bdat)
+              {
+                unsigned char free_space;
+                unsigned char tail_tmp;
+                while(1)
+                {       
+                  tail_tmp = uart0_send.tail; 
+                  if(uart0_send.head < tail_tmp)
+                  {
+                    free_space = tail_tmp - uart0_send.head;
+                  }
+                  else
+                  {
+                    free_space = UART0_TX_BUF_SIZE + tail_tmp - uart0_send.head;
+                  }   
+                  if(free_space > 1)
+                  {
+                    ES0 = 0; 
+                    uart0_send.head++;
+                    uart0_send.head %= UART0_TX_BUF_SIZE;
+                    uart0_tx_buf[uart0_send.head] = bdat;     
+                    if(!uart0_tx_flag)
+                    {
+                      ES0 = 1;        
+                      uart0_send.tail++;
+                      uart0_send.tail %= UART0_TX_BUF_SIZE;   
+                      S0BUF=uart0_tx_buf[uart0_send.tail];        
+                      uart0_tx_flag = 1;    
+                    }
+                    else
+                    {
+                      ES0 = 1;  
+                    }     
+                    break;
+                  }
+                }
+              }
+              void UART0_ISR (void) interrupt 4
+              { 
+                if(RI0)
+                {
+                  RI0 = 0;
+                  uart0_rev.head++;
+                  uart0_rev.head %= UART0_RX_BUF_SIZE;
+C51 COMPILER V9.56.0.0   UART                                                              08/03/2020 17:20:28 PAGE 3   
+
+                  uart0_rx_buf[uart0_rev.head]=S0BUF;
+                }
+                if(TI0)
+                { 
+                  TI0 = 0;    
+                  if(uart0_send.head!=uart0_send.tail)
+                  {
+                    uart0_send.tail++;
+                    uart0_send.tail %= UART0_TX_BUF_SIZE;
+                    S0BUF=uart0_tx_buf[uart0_send.tail];        
+                  }
+                  else
+                  {
+                    uart0_tx_flag=0;
+                  } 
+                }
+              }
+              #endif
+ 129          #ifdef UART1_EN
+ 130          void Uart1_Initial(unsigned long int baudrate)
+ 131          {
+ 132   1        unsigned int value_temp;
+ 133   1      
+ 134   1        uart1_send.head=0;
+ 135   1        uart1_send.tail=0;
+ 136   1        uart1_rev.head=0;
+ 137   1        uart1_rev.tail=0;
+ 138   1        uart1_tx_flag=0;
+ 139   1      
+ 140   1        value_temp = 0x400 - FOSC/(baudrate*32);
+ 141   1      
+ 142   1      
+ 143   1        P12F = P12_UART1_RX_SETTING;
+ 144   1        P11F = P11_UART1_TX_SETTING;
+ 145   1      
+ 146   1      
+ 147   1        S1RELH = (unsigned char)(value_temp>>8);
+ 148   1        S1RELL = (unsigned char)(value_temp);
+ 149   1        
+ 150   1        S1CON = 0xD0;
+ 151   1        ES1 = 1;  
+ 152   1      }
+ 153          void Uart1_PutChar(unsigned char bdat)
+ 154          {
+ 155   1        unsigned char free_space;
+ 156   1        unsigned char tail_tmp;
+ 157   1        while(1)
+ 158   1        {   
+ 159   2          tail_tmp = uart1_send.tail;
+ 160   2          if(uart1_send.head < tail_tmp)
+ 161   2          {
+ 162   3            free_space = tail_tmp - uart1_send.head;
+ 163   3          }
+ 164   2          else
+ 165   2          {
+ 166   3            free_space = UART1_TX_BUF_SIZE + tail_tmp - uart1_send.head;
+ 167   3          }   
+ 168   2          if(free_space > 1)
+ 169   2          {
+ 170   3            ES1 = 0; 
+ 171   3            uart1_send.head++;
+ 172   3            uart1_send.head %= UART1_TX_BUF_SIZE;
+C51 COMPILER V9.56.0.0   UART                                                              08/03/2020 17:20:28 PAGE 4   
+
+ 173   3            uart1_tx_buf[uart1_send.head] = bdat;
+ 174   3            if(!uart1_tx_flag)
+ 175   3            {
+ 176   4              ES1 = 1;
+ 177   4              uart1_send.tail++;
+ 178   4              uart1_send.tail %= UART1_TX_BUF_SIZE;   
+ 179   4              S1BUF = uart1_tx_buf[uart1_send.tail];        
+ 180   4              uart1_tx_flag = 1;    
+ 181   4            }
+ 182   3            else
+ 183   3            {
+ 184   4              ES1 = 1;  
+ 185   4            }     
+ 186   3            break;
+ 187   3          }
+ 188   2        }
+ 189   1      }
+ 190          void UART1_ISR (void) interrupt 6 
+ 191          {
+ 192   1        if(S1CON & 0x01)
+ 193   1        {
+ 194   2          S1CON = (S1CON&0xFC)|0x01;       
+ 195   2          uart1_rev.head++;
+ 196   2          uart1_rev.head %= UART1_RX_BUF_SIZE;
+ 197   2          uart1_rx_buf[uart1_rev.head]=S1BUF;
+ 198   2        }
+ 199   1        if(S1CON & 0x02)
+ 200   1        {
+ 201   2          S1CON = (S1CON&0xFC)|0x02;      
+ 202   2          if(uart1_send.head!=uart1_send.tail)
+ 203   2          {
+ 204   3            uart1_send.tail++;
+ 205   3            uart1_send.tail %= UART1_TX_BUF_SIZE;
+ 206   3            S1BUF=uart1_tx_buf[uart1_send.tail];        
+ 207   3          }
+ 208   2          else
+ 209   2          {
+ 210   3            uart1_tx_flag=0;
+ 211   3          }   
+ 212   2        }
+ 213   1      }
+ 214          #endif
+ 215          
+ 216          #ifdef PRINT_EN
+ 217            #ifdef UART0_PRINT
+                  #define Uart_PutChar  Uart0_PutChar
+                #elif defined  UART1_PRINT
+ 220              #define Uart_PutChar  Uart1_PutChar
+ 221            #endif
+ 222          void UartPutStr(char *str)
+ 223          {
+ 224   1        while(*str)
+ 225   1        { 
+ 226   2          Uart_PutChar(*str++);
+ 227   2        }
+ 228   1      }
+ 229          void uart_printf(char *fmt,...) 
+ 230          {
+ 231   1          va_list ap;
+ 232   1          char xdata string[256];
+ 233   1          va_start(ap,fmt);
+ 234   1          vsprintf(string,fmt,ap);
+C51 COMPILER V9.56.0.0   UART                                                              08/03/2020 17:20:28 PAGE 5   
+
+ 235   1          UartPutStr(string);
+ 236   1          va_end(ap);
+ 237   1      }
+ 238          #endif
+ 239          /*********************************************************************************************************
+             -************/
+ 240          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    380    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    124     256
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      28
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

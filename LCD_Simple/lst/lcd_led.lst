@@ -1,0 +1,13 @@
+C51 COMPILER V9.51   LCD_LED                                                               06/23/2017 16:36:56 PAGE 1   
+
+
+C51 COMPILER V9.51, COMPILATION OF MODULE LCD_LED
+OBJECT MODULE PLACED IN .\hex\lcd_led.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE source\c\lcd_led.c ROM(COMPACT) BROWSE DEBUG OBJECTEXTEND PRINT(.\lst\lcd_l
+                    -ed.lst) TABS(2) OBJECT(.\hex\lcd_led.obj)
+
+line level    source
+
+*** ERROR C318 OF source\c\lcd_led.c: can't open file 'source\c\lcd_led.c'
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  1 ERROR(S)

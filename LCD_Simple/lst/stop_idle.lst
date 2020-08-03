@@ -1,0 +1,13 @@
+C51 COMPILER V9.51   STOP_IDLE                                                             06/23/2017 16:36:55 PAGE 1   
+
+
+C51 COMPILER V9.51, COMPILATION OF MODULE STOP_IDLE
+OBJECT MODULE PLACED IN .\hex\stop_idle.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE source\c\stop_idle.c ROM(COMPACT) BROWSE DEBUG OBJECTEXTEND PRINT(.\lst\sto
+                    -p_idle.lst) TABS(2) OBJECT(.\hex\stop_idle.obj)
+
+line level    source
+
+*** ERROR C318 OF source\c\stop_idle.c: can't open file 'source\c\stop_idle.c'
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  1 ERROR(S)

@@ -1,0 +1,85 @@
+C51 COMPILER V9.51   ADC                                                                   05/13/2019 16:24:21 PAGE 1   
+
+
+C51 COMPILER V9.51, COMPILATION OF MODULE ADC
+OBJECT MODULE PLACED IN adc.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE source\adc.c ROM(COMPACT) BROWSE DEBUG OBJECTEXTEND PRINT(.\lst\adc.lst) TA
+                    -BS(2) OBJECT(adc.obj)
+
+line level    source
+
+   1          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   2          /*                                                                                                        
+             - */
+   3          /* Copyright(c) 2017 Nuvoton Technology Corp. All rights reserved.                                        
+             - */
+   4          /*                                                                                                        
+             - */
+   5          /*--------------------------------------------------------------------------------------------------------
+             --*/
+   6          
+   7          //********************************************************************************************************
+             -***
+   8          //  Website: http://www.nuvoton.com
+   9          //  E-Mail : MicroC-8bit@nuvoton.com
+  10          //  Date   : Jan/21/2017
+  11          //********************************************************************************************************
+             -***
+  12          
+  13          //********************************************************************************************************
+             -***
+  14          //  File Function: N76E003 SPI ADC / Bandgap input demo code
+  15          //********************************************************************************************************
+             -***
+  16          
+  17          #ifndef _MAIN_C_
+  18          #define _MAIN_C_
+  19          
+  20          /*********************************************************************************************************
+             -************/
+  21          #include "ca51f_config.h"
+*** WARNING C318 IN LINE 21 OF source\adc.c: can't open file 'ca51f_config.h'
+  22          #include "../../includes/ca51f3sfr.h"
+*** WARNING C318 IN LINE 22 OF source\adc.c: can't open file '../../includes/ca51f3sfr.h'
+  23          #include "../../includes/ca51f3xsfr.h"
+*** WARNING C318 IN LINE 23 OF source\adc.c: can't open file '../../includes/ca51f3xsfr.h'
+  24          #include "../../includes/gpiodef_f3.h"
+*** WARNING C318 IN LINE 24 OF source\adc.c: can't open file '../../includes/gpiodef_f3.h'
+  25          
+  26          #include "../../includes/system.h"
+*** WARNING C318 IN LINE 26 OF source\adc.c: can't open file '../../includes/system.h'
+  27          #include "../../Library/includes/uart.h"
+*** WARNING C318 IN LINE 27 OF source\adc.c: can't open file '../../Library/includes/uart.h'
+  28          #include "../../Library/includes/adc.h"
+*** WARNING C318 IN LINE 28 OF source\adc.c: can't open file '../../Library/includes/adc.h'
+  29          #include "key.h"
+*** WARNING C318 IN LINE 29 OF source\adc.c: can't open file 'key.h'
+  30          #include "ad_key.h"
+*** WARNING C318 IN LINE 30 OF source\adc.c: can't open file 'ad_key.h'
+  31          #include <intrins.h>
+  32          
+  33          void main(void)
+  34          {
+  35   1      #ifdef UART0_EN
+C51 COMPILER V9.51   ADC                                                                   05/13/2019 16:24:21 PAGE 2   
+
+                Uart0_Initial(UART0_BAUTRATE);
+              #endif
+  38   1      #ifdef UART1_EN
+                Uart1_Initial(UART1_BAUTRATE);
+              #endif
+  41   1      
+  42   1        EA = 1;
+*** ERROR C202 IN LINE 42 OF source\adc.c: 'EA': undefined identifier
+  43   1      
+  44   1      #ifdef PRINT_EN
+                uart_printf("AD Key example!\n");
+              #endif
+  47   1        
+  48   1        ADKey_MainLoop();
+  49   1        while(1);
+  50   1      }
+  51          #endif
+
+C51 COMPILATION COMPLETE.  9 WARNING(S),  1 ERROR(S)

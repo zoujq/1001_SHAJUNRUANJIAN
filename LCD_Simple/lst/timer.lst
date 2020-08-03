@@ -1,0 +1,13 @@
+C51 COMPILER V9.51   TIMER                                                                 06/23/2017 16:36:56 PAGE 1   
+
+
+C51 COMPILER V9.51, COMPILATION OF MODULE TIMER
+OBJECT MODULE PLACED IN .\hex\timer.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE source\c\timer.c ROM(COMPACT) BROWSE DEBUG OBJECTEXTEND PRINT(.\lst\timer.l
+                    -st) TABS(2) OBJECT(.\hex\timer.obj)
+
+line level    source
+
+*** ERROR C318 OF source\c\timer.c: can't open file 'source\c\timer.c'
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  1 ERROR(S)

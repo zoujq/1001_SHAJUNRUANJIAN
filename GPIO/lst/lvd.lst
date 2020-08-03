@@ -1,0 +1,13 @@
+C51 COMPILER V9.51   LVD                                                                   06/23/2017 16:36:55 PAGE 1   
+
+
+C51 COMPILER V9.51, COMPILATION OF MODULE LVD
+OBJECT MODULE PLACED IN .\hex\lvd.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE source\c\lvd.c ROM(COMPACT) BROWSE DEBUG OBJECTEXTEND PRINT(.\lst\lvd.lst) 
+                    -TABS(2) OBJECT(.\hex\lvd.obj)
+
+line level    source
+
+*** ERROR C318 OF source\c\lvd.c: can't open file 'source\c\lvd.c'
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  1 ERROR(S)

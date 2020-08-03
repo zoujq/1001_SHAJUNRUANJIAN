@@ -1,0 +1,55 @@
+C51 COMPILER V9.56.0.0   DELAY                                                             08/02/2020 22:13:03 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE DELAY
+OBJECT MODULE PLACED IN .\output\delay.obj
+COMPILER INVOKED BY: F:\Keil\C51\BIN\C51.EXE source\delay.c OMF2 OPTIMIZE(8,SPEED) BROWSE DEBUG PRINT(.\lst\delay.lst) T
+                    -ABS(2) OBJECT(.\output\delay.obj)
+
+line level    source
+
+   1          #ifndef _Delay_C_
+   2          #define _Delay_C_
+   3          #include "include/ca51f_config.h"
+   4          /*********************************************************************************************************
+             -************/
+   5          void Delay_50us(unsigned int n)    
+   6          {
+   7   1        unsigned char i;
+   8   1      #if (SYSCLK_SRC == PLL)
+                n *= PLL_Multiple;
+              #endif 
+  11   1        
+  12   1        while(n--)
+  13   1        {
+  14   2          for(i=0;i<15;i++);
+  15   2        }
+  16   1      }
+  17          void Delay_ms(unsigned int delay_nms)
+  18          {
+  19   1        while(delay_nms--)
+  20   1        {
+  21   2          Delay_50us(20);
+  22   2        }
+  23   1      }
+  24          /*********************************************************************************************************
+             -************/
+  25          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     49    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

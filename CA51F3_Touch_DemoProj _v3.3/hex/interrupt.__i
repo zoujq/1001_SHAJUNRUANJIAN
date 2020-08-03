@@ -1,0 +1,1 @@
+"interrupt.c" OMF2 OPTIMIZE (9,SIZE) BROWSE DEBUG PRINT(.\lst\interrupt.lst) TABS (2) OBJECT(.\hex\interrupt.obj)

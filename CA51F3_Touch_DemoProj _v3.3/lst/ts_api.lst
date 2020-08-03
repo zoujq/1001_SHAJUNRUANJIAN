@@ -1,0 +1,1932 @@
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE TS_API
+OBJECT MODULE PLACED IN .\hex\ts_api.obj
+COMPILER INVOKED BY: F:\Keil\C51\BIN\C51.exe TS_Lib\Sources\ts_api.c OMF2 OPTIMIZE(9,SIZE) BROWSE DEBUG PRINT(.\lst\ts_a
+                    -pi.lst) TABS(2) OBJECT(.\hex\ts_api.obj)
+
+line level    source
+
+   1          #ifndef _TK_API_C_
+   2          #define _TK_API_C_
+   3          
+   4          /*********************************************************************************************************
+             -************/
+   5          #include "ca51f_config.h"
+   6          #include "includes\ca51f3sfr.h"
+   7          #include "includes\ca51f3xsfr.h"
+   8          #include "includes\gpiodef_f3.h"
+   9          
+  10          #include "Library\Includes\rtc.h"   
+  11          #include "Library\Includes\system_clock.h"    
+  12          #include "Library\includes\uart.h"
+  13          #include "includes\system.h"
+  14          #include "Library\includes\adc.h"
+  15          #include "Library\includes\delay.h"
+  16          #include <intrins.h>
+  17          /*********************************************************************************************************
+             -************/
+  18          #include "TS_Lib\Includes\ts_configuration.h"
+  19          #include "TS_Lib\Includes\ts_def.h"
+  20          #include "TS_Lib\Includes\ts_api.h"
+  21          #include "TS_Lib\Includes\ts_service.h"      
+  22          /*********************************************************************************************************
+             -************/
+  23          void Debug_init(void);
+  24          void Debug_ParamLoad(void);
+  25          
+  26          #if SUPPORT_KEY
+  27          #if TK_SENSITIVE_AUTO_TRIM_EN
+              void TK_TouchThdTrim(unsigned char ch);
+              #endif
+  30          code unsigned int TS_KEY_CH_INFO_SEQ[][2]=
+  31          {
+  32            KEY_SEQ
+  33          };
+  34          #if TK_SENSITIVE_AUTO_TRIM_EN
+              code unsigned int TK_BASELINE_VALUE_INFO_SEQ[]=
+              {
+                TK_BASELINE_VALUE_SEQ
+              };
+              #endif
+  40          #endif
+  41          #if SUPPORT_WHEEL_SLIDER
+              code unsigned char TS_WHEEL_SLIDER_CH_SEQ[]=
+              {
+                WHEEL_SLIDER0_SEQ,
+              };
+              code unsigned char WHEEL_SLIDER0_MAX_MIN_TAB[]={WHEEL_SLIDER0_CH_MIN_RATE};
+              #else
+  48          code unsigned char WHEEL_SLIDER0_MAX_MIN_TAB[1]={0};
+  49          #endif  
+  50          #if SUPPORT_KEY 
+  51          code TYPE_SN MASK_TAB[]=
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 2   
+
+  52          {
+  53            0x000001,
+  54          #if (KEY_CH_COUNT > 1)
+  55            0x000002,
+  56          #endif
+  57          #if (KEY_CH_COUNT > 2)
+  58            0x000004,
+  59          #endif
+  60          #if (KEY_CH_COUNT > 3)
+  61            0x000008,
+  62          #endif
+  63          #if (KEY_CH_COUNT > 4)
+  64            0x000010,
+  65          #endif
+  66          #if (KEY_CH_COUNT > 5)
+  67            0x000020,
+  68          #endif
+  69          #if (KEY_CH_COUNT > 6)
+                0x000040,
+              #endif
+  72          #if (KEY_CH_COUNT > 7)
+                0x000080,
+              #endif
+  75          #if (KEY_CH_COUNT > 8)
+                0x000100,
+              #endif
+  78          #if (KEY_CH_COUNT > 9)
+                0x000200,
+              #endif
+  81          #if (KEY_CH_COUNT > 10)
+                0x000400,
+              #endif
+  84          #if (KEY_CH_COUNT > 11)
+                0x000800,
+              #endif
+  87          #if (KEY_CH_COUNT > 12)
+                0x001000,
+              #endif
+  90          #if (KEY_CH_COUNT > 13)
+                0x002000,
+              #endif
+  93          #if (KEY_CH_COUNT > 14)
+                0x004000,
+              #endif
+  96          #if (KEY_CH_COUNT > 15)
+                0x008000,
+              #endif
+  99          #if (KEY_CH_COUNT > 16)
+                0x010000,
+              #endif
+ 102          #if (KEY_CH_COUNT > 17)
+                0x020000,
+              #endif
+ 105          #if (KEY_CH_COUNT > 18)
+                0x040000,
+              #endif
+ 108          #if (KEY_CH_COUNT > 19)
+                0x080000,
+              #endif
+ 111          
+ 112          };
+ 113          code unsigned char AREA_CONFIRM_TIME_TAB[]=
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 3   
+
+ 114          {
+ 115            FINGER_TOUCH_CONFIRM_TIME,
+ 116            AREA_PNOISE_PLUS_CONFIRM_TIME,
+ 117            AREA_PNOISE_CONFIRM_TIME,
+ 118            AREA_NNOISE_CONFIRM_TIME,
+ 119            AREA_OVERLOW_CONFIRM_TIME,
+ 120          };
+ 121          #else
+              code unsigned char AREA_CONFIRM_TIME_TAB[1]={0};
+              code unsigned long int MASK_TAB[1]={0};
+              #endif
+ 125          void TS_MS_ISR (void)
+ 126          {
+ 127   1        static unsigned char xdata ms_cnt = 0;
+ 128   1        unsigned char i;
+ 129   1       
+ 130   1        ms_cnt++;
+ 131   1        if(ms_cnt >= 4)
+ 132   1        {
+ 133   2          ms_cnt = 0;
+ 134   2          for(i = 0; i < TS_Cnt; i++)
+ 135   2          {
+ 136   3            if(TS_AreaConfirmTimer[i])
+ 137   3            {
+ 138   4              TS_AreaConfirmTimer[i]--;
+ 139   4            }
+ 140   3          }
+ 141   2      #if SUPPORT_WHEEL_SLIDER  
+                  if(TSWheelSlider_TouchConfirmTimer)
+                  {
+                    TSWheelSlider_TouchConfirmTimer--;
+                  }
+              #endif
+ 147   2      #if SUPPORT_KEY
+ 148   2      #if SUPPORT_COVER_PANAL_AFTER_POWERON
+                  if(PanalCoverJudgeTimer) PanalCoverJudgeTimer--;
+              #endif
+ 151   2      #endif
+ 152   2      
+ 153   2      #if ANTI_SPEAKER_EN
+                  if(RefChDataTimer) RefChDataTimer--;
+              #endif
+ 156   2        } 
+ 157   1      }
+ 158          void TS_HS_ISR (void)
+ 159          {
+ 160   1      #if SUPPORT_KEY
+ 161   1      #if (FINGER_LONG_TOUCH_TIME_LIMIT > 0)
+ 162   1        unsigned char i;
+ 163   1      #endif
+ 164   1      #endif
+ 165   1        TS_HalfSecCnt++;
+ 166   1      #if SUPPORT_TOUCH_SLEEP_MODE
+                if(TS_SleepMode)
+                {
+                  return;
+                }
+              #endif
+ 172   1      #if SUPPORT_KEY
+ 173   1      #if (FINGER_LONG_TOUCH_TIME_LIMIT > 0)
+ 174   1        for(i = 0; i < KEY_CH_COUNT; i++)
+ 175   1        {
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 4   
+
+ 176   2          if(TSKey_LongTouchLimitTimer[i])
+ 177   2          {
+ 178   3            TSKey_LongTouchLimitTimer[i]--;
+ 179   3          }
+ 180   2        }   
+ 181   1      #endif
+ 182   1      #endif
+ 183   1      #if SUPPORT_WHEEL_SLIDER  
+              #if (WHEEL_SLIDER_LONG_TOUCH_TIME_LIMIT > 0)
+                if(TSWheelSlider_LongTouchLimitTimer)
+                {
+                  TSWheelSlider_LongTouchLimitTimer--;
+                }
+              #endif
+              #endif
+ 191   1        if(TS_RefCHBaseLineAdjuTimer)
+ 192   1        {
+ 193   2          TS_RefCHBaseLineAdjuTimer--;
+ 194   2        } 
+ 195   1        if(EnterStopScanTimer)
+ 196   1        {
+ 197   2          EnterStopScanTimer--;
+ 198   2        } 
+ 199   1      }
+ 200          void TS_ISR (void)
+ 201          { 
+ 202   1        unsigned char index_copy,i;
+ 203   1        WORD_UNION TS_Data[6];
+ 204   1      #if TK_FREQ_JUMP_EN
+                static unsigned int xdata TSDataTemp[JUMP_FREQ_NUM][OPENED_TS_COUNT+1];
+                unsigned int xdata delta[JUMP_FREQ_NUM];
+                unsigned int min_delta;
+                unsigned char min_index;
+                unsigned char j;
+              #endif
+ 211   1        if(TLFLG & (TLERR|TLKOV|TLLOV))
+ 212   1        {
+ 213   2          TLFLG |= TLERR|TLKOV|TLLOV;
+ 214   2        }
+ 215   1        index_copy = INDEX;
+ 216   1        for(i = 0; i < 6; i++)
+ 217   1        {
+ 218   2          if(TKIF & (1<<i))
+ 219   2          {
+ 220   3            TKIF = (1<<i);  
+ 221   3            INDEX = i;
+ 222   3            TS_Data[i].bVal[0] = TKMSH;
+ 223   3            TS_Data[i].bVal[1] = TKMSL;
+ 224   3          }
+ 225   2        }
+ 226   1        for(i = 0; i < 6; i++)
+ 227   1        {
+ 228   2      #if TK_FREQ_JUMP_EN
+                  if(TS_State == TS_DEAL)
+                  {
+                    TSDataTemp[NowTKFreqIndex][TS_Index+i] = TS_Data[i].wVal; 
+                    
+                    if(NowTKFreqIndex == (JUMP_FREQ_NUM-1))
+                    {
+                      min_delta = 0xFFFF;
+                      for(j = 0; j < JUMP_FREQ_NUM; j++)
+                      {
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 5   
+
+                        if(TSDataTemp[j][TS_Index+i] > TS_JumpFreqData[j][TS_Index+i]/TS_ACQ_TIMES)
+                        {
+                          delta[j] = TSDataTemp[j][TS_Index+i] - TS_JumpFreqData[j][TS_Index+i]/TS_ACQ_TIMES;
+                        }
+                        else
+                        {
+                          delta[j] = TS_JumpFreqData[j][TS_Index+i]/TS_ACQ_TIMES - TSDataTemp[j][TS_Index+i];
+                        }
+                        if(delta[j] < min_delta)
+                        {
+                          min_delta = delta[j];
+                          min_index = j;
+                        }
+                      }
+                      TS_Data[i].wVal = TSDataTemp[min_index][TS_Index+i] + TS_JumpFreqData[1][TS_Index+i]/TS_ACQ_TIMES - TS
+             -_JumpFreqData[min_index][TS_Index+i]/TS_ACQ_TIMES;  
+                    } 
+                    
+                  }
+              #endif  
+ 257   2      #if TK_FREQ_JUMP_EN
+                  if(((TS_State == TS_DEAL)&&(NowTKFreqIndex == (JUMP_FREQ_NUM-1))) ||(TS_State != TS_DEAL))
+              #endif
+ 260   2          {
+ 261   3      #if (TS_ACQ_TIMES == 1)
+ 262   3            TS_RawData[TS_Index+i] = TS_Data[i].wVal;
+ 263   3      #else
+                    TS_DataSum[TS_Index+i] += TS_Data[i].wVal;  
+              #endif    
+ 266   3          }
+ 267   2          if(TS_Index+i == TS_Cnt)
+ 268   2          {     
+ 269   3            break;
+ 270   3          } 
+ 271   2        }
+ 272   1      #if TK_FREQ_JUMP_EN
+                if(TS_State == TS_DEAL)
+                {
+                  if(NowTKFreqIndex == 1)
+                  {
+                    NowTKFreqIndex = 0;
+                    TFCFG = TfrcFreq1Cfg;
+                    TKCON |= TKST(1); 
+                    INDEX = index_copy;
+                    return;
+                  }
+              #if (JUMP_FREQ_NUM > 2)
+                  else if(NowTKFreqIndex == 0)
+                  {
+                    NowTKFreqIndex = 2;
+                    TFCFG = TfrcFreq3Cfg;
+                    TKCON |= TKST(1); 
+                    INDEX = index_copy;
+                    return;
+                  }
+              #endif
+                  else
+                  {
+                    NowTKFreqIndex = 1;
+                    TFCFG = TfrcFreq2Cfg;
+                  }
+                }
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 6   
+
+              #endif
+ 300   1        if(TS_Index+6 > TS_Cnt)
+ 301   1        {
+ 302   2      #if (TS_ACQ_TIMES == 1)
+ 303   2          TS_CycleScanDoneFlag = 1; 
+ 304   2      #else
+                  TS_Acq_Counter++;
+                  if(TS_Acq_Counter >= TS_ACQ_TIMES)
+                  {
+                    for(i = 0; i < TS_Cnt+1; i++)
+                    {
+                      TS_RawData[i] = TS_DataSum[i];
+                      TS_DataSum[i] = 0;
+                    }
+                    TS_CycleScanDoneFlag = 1;   
+                    TS_Acq_Counter = 0;
+                  } 
+              #endif    
+ 317   2          TS_Index = 0;
+ 318   2        }
+ 319   1        else 
+ 320   1        {
+ 321   2          TS_Index += 6;
+ 322   2        }
+ 323   1        TS_ScanStart(); 
+ 324   1        if(TS_HalfSecCnt) TS_HalfSecCnt--;
+ 325   1        WDFLG = 0xA5;
+ 326   1        INDEX = index_copy;
+ 327   1      }
+ 328          void TS_DataFiltering(void)
+ 329          {
+ 330   1        unsigned char i;
+ 331   1      #if (FILTER_COUNT > 1)
+ 332   1        unsigned char j;
+ 333   1        unsigned int DataSum,DataMax,DataMin;
+ 334   1      #endif
+ 335   1        for(i = 0; i < TS_Cnt+1; i++)
+ 336   1        {
+ 337   2      #if (FILTER_COUNT == 1)
+                  TS_PostData[i] = TS_RawData[i];
+              #else
+ 340   2          TS_FilterPosIdx[i]++;
+ 341   2          if(TS_FilterPosIdx[i] >= FILTER_COUNT) 
+ 342   2          {
+ 343   3            TS_FilterPosIdx[i] = 0;
+ 344   3          }
+ 345   2          INT3EN = 0;
+ 346   2          TS_FilterBuf[i][TS_FilterPosIdx[i]] = TS_RawData[i];
+ 347   2          INT3EN = 1; 
+ 348   2          
+ 349   2          DataSum = 0;
+ 350   2          DataMax = 0;
+ 351   2          DataMin = 0xFFFF;
+ 352   2          for(j = 0; j < FILTER_COUNT; j++)
+ 353   2          {
+ 354   3            DataSum += TS_FilterBuf[i][j];
+ 355   3      #if (FILTER_COUNT > 2)
+ 356   3            if(TS_FilterBuf[i][j] > DataMax)
+ 357   3            {
+ 358   4              DataMax = TS_FilterBuf[i][j];
+ 359   4            }
+ 360   3            if(TS_FilterBuf[i][j] < DataMin)
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 7   
+
+ 361   3            {
+ 362   4              DataMin = TS_FilterBuf[i][j];
+ 363   4            }
+ 364   3      #endif
+ 365   3          }
+ 366   2      #if (FILTER_COUNT == 2)
+                  TS_PostData[i] = (DataSum)/(FILTER_COUNT);  
+              #else
+ 369   2          TS_PostData[i] = (DataSum - DataMax - DataMin)/(FILTER_COUNT-2);  
+ 370   2      #endif
+ 371   2      #endif    
+ 372   2        }   
+ 373   1      }
+ 374          #if SUPPORT_KEY
+ 375          #if ANTI_SPEAKER_EN
+              bit TS_RefChAbnormalJudge(void)
+              {
+                unsigned int ref_value,crt_value,delta;
+                
+                if(RefChDataBufIdx == (REF_CH_DATA_BUF_SIZE-1)) 
+                {
+                  ref_value = RefChDataBuf[0];
+                }
+                else
+                {
+                  ref_value = RefChDataBuf[RefChDataBufIdx + 1];
+                }
+                crt_value = TS_PostData[OPENED_TS_COUNT];
+                if(ref_value > crt_value)
+                {
+                  delta = ref_value - crt_value;
+                }
+                else
+                {
+                  delta = crt_value - ref_value;
+                }
+                if(delta >= REF_CH_ABNORMAL_THD)      
+                {
+                  return 1;
+                }
+                else
+                {
+                  return 0;
+                }
+              }
+              void TS_RefChCheck(void)
+              {
+                if(!RefChDataTimer)
+                {
+                  RefChDataTimer = 3;
+                  RefChDataBufIdx++;
+                  if(RefChDataBufIdx >= REF_CH_DATA_BUF_SIZE)
+                  {
+                    RefChDataBufIdx = 0;
+                  }
+                  RefChDataBuf[RefChDataBufIdx] = TS_PostData[OPENED_TS_COUNT];
+                } 
+              }
+              #endif
+ 420          #endif
+ 421          void TS_RunInit(void)
+ 422          {
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 8   
+
+ 423   1        unsigned char i,j;
+ 424   1        static unsigned char TS_ScanTimes=0;
+ 425   1        static unsigned char TS_Init_Step_Sub;
+ 426   1        if(TS_Init_Step == 0)
+ 427   1        {
+ 428   2      #if (TS_ACQ_TIMES > 1)
+                  for(i = 0; i < TS_Cnt; i++)
+                  { 
+                    TS_DataSum[i] = 0;
+                  }
+                  TS_Acq_Counter = 0;
+              #endif
+ 435   2      #if TK_FREQ_JUMP_EN
+                  NowTKFreqIndex = 0;
+                  TFCFG = TfrcFreq1Cfg;
+                  TS_Init_Step_Sub = 0;
+              #endif
+ 440   2          TS_CycleScanDoneFlag = 0;
+ 441   2          TS_HalfSecCnt = 0;
+ 442   2          TS_Index = 0;
+ 443   2          TS_ScanStart(); 
+ 444   2          TS_Init_Step = 1;   
+ 445   2          TS_Init_Step_Sub = 0;
+ 446   2          TS_ScanTimes = 5;
+ 447   2        }
+ 448   1        else if(TS_Init_Step == 1)
+ 449   1        {
+ 450   2          if(TS_CycleScanDoneFlag)
+ 451   2          {
+ 452   3            TS_CycleScanDoneFlag = 0;
+ 453   3            if(TS_Init_Step_Sub == 0)
+ 454   3            {
+ 455   4              if(--TS_ScanTimes)
+ 456   4              {       
+ 457   5                return;
+ 458   5              }
+ 459   4              for(i = 0; i < TS_Cnt+1; i++)
+ 460   4              {
+ 461   5                TS_PostData[i] = TS_RawData[i];
+ 462   5              }
+ 463   4              TS_Init_Step_Sub = 1;
+ 464   4              TS_AreaConfirmTimer[0] = 40;
+ 465   4            }     
+ 466   3            else if(TS_Init_Step_Sub == 1)
+ 467   3            {
+ 468   4              if(!TS_AreaConfirmTimer[0])
+ 469   4              {
+ 470   5                int delta;
+ 471   5                for(i = 0; i < TS_Cnt+1; i++)
+ 472   5                {
+ 473   6                  delta = (int)TS_PostData[i] - (int)TS_RawData[i];
+ 474   6                  if((delta > NOISE_THRESHOLD) || (delta < -NOISE_THRESHOLD))
+ 475   6                  {
+ 476   7                    TS_Init_Step_Sub = 0;
+ 477   7                    return;
+ 478   7                  }
+ 479   6                }     
+ 480   5                TS_Init_Step = 2;
+ 481   5                TS_ScanTimes = 10;  
+ 482   5              }
+ 483   4            }
+ 484   3          }
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 9   
+
+ 485   2        }
+ 486   1        else if(TS_Init_Step == 2)
+ 487   1        {
+ 488   2          if(TS_CycleScanDoneFlag)
+ 489   2          {
+ 490   3            TS_CycleScanDoneFlag = 0;
+ 491   3            if(--TS_ScanTimes)
+ 492   3            {       
+ 493   4              return;
+ 494   4            }
+ 495   3      #if TK_FREQ_JUMP_EN
+                    if(TS_Init_Step_Sub == 0)
+                    {
+                      for(i = 0; i < TS_Cnt+1; i++)
+                      {
+                        TS_JumpFreqData[0][i] = TS_RawData[i];
+                      }
+                      TS_Init_Step_Sub++;
+              #if (JUMP_FREQ_NUM > 2)
+                      NowTKFreqIndex = 2;
+                      TFCFG = TfrcFreq3Cfg;
+              #else
+                      NowTKFreqIndex = 1;
+                      TFCFG = TfrcFreq2Cfg;       
+              #endif
+                      TS_ScanTimes = 3;           
+                      return;
+                    }
+              #if (JUMP_FREQ_NUM > 2)
+                    else if(TS_Init_Step_Sub == 1)
+                    {
+                      for(i = 0; i < TS_Cnt+1; i++)
+                      {
+                        TS_JumpFreqData[2][i] = TS_RawData[i];
+                      }
+                      TS_Init_Step_Sub++;
+                      NowTKFreqIndex = 1;
+                      TFCFG = TfrcFreq2Cfg;
+                      TS_ScanTimes = 3;           
+                      return;
+                    }
+              #endif
+              #endif
+ 528   3            TS_RefCHBaseLineAdjuTimer = 0;
+ 529   3            for(i = 0; i < TS_Cnt+1; i++)
+ 530   3            { 
+ 531   4              for(j = 0; j < FILTER_COUNT; j++)
+ 532   4              {
+ 533   5                TS_FilterBuf[i][j] = TS_RawData[i];
+ 534   5              }
+ 535   4              TS_FilterPosIdx[i] = 0;
+ 536   4              
+ 537   4      #if TK_FREQ_JUMP_EN
+                      TS_JumpFreqData[1][i] = TS_RawData[i];
+              #endif
+ 540   4              if(i == TS_Cnt) break;
+ 541   4              TS_BaseLineData[i] = TS_RawData[i];     
+ 542   4              TS_FirstAreaData[i] = TS_RawData[i]; 
+ 543   4              
+ 544   4      #if (SUPPORT_KEY && SUPPORT_WHEEL_SLIDER)
+                      if(i < KEY_CH_COUNT)
+                      {
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 10  
+
+              #if TK_SENSITIVE_AUTO_TRIM_EN
+                        TK_TouchThdTrim(i);
+              #else
+                        TSKey_FingerThd[i] = TS_KEY_CH_INFO_SEQ[i][1];
+              #endif
+                        TS_AreaConfirmTimerSet(i,AREA_PNOISE);
+                      }
+                      else
+                      {
+                        TS_AreaConfirmTimer[i] = WHEEL_SLIDER_BASELINE_UPDATE_TIME;
+                      }
+              #elif SUPPORT_KEY
+ 559   4      #if TK_SENSITIVE_AUTO_TRIM_EN
+                      TK_TouchThdTrim(i);
+              #else
+ 562   4              TSKey_FingerThd[i] = TS_KEY_CH_INFO_SEQ[i][1];
+ 563   4      #endif
+ 564   4              TS_AreaConfirmTimerSet(i,AREA_PNOISE);        
+ 565   4      #elif SUPPORT_WHEEL_SLIDER
+                      TS_AreaConfirmTimer[i] = WHEEL_SLIDER_BASELINE_UPDATE_TIME;
+              #endif
+ 568   4            } 
+ 569   3      #if ANTI_SPEAKER_EN
+                    for(i = 0; i < REF_CH_DATA_BUF_SIZE; i++)
+                    {
+                      RefChDataBuf[i] = TS_PostData[OPENED_TS_COUNT];
+                    }
+                    RefChDataBufIdx = 0;
+              #endif      
+ 576   3      #if (DEBUG)
+                    Debug_ParamLoad();
+              #endif    
+ 579   3            TS_State = TS_DEAL; 
+ 580   3          }
+ 581   2        }
+ 582   1      }
+ 583          #if SUPPORT_KEY
+ 584          #if TK_SHARE_LED_EN
+              void TKLED_Set(unsigned char ch,unsigned char mode)
+              {
+                unsigned char real_ch,idx,mask_bit;
+                switch(mode)
+                {
+                  case LED_ON:
+                  case LED_OFF:
+                    real_ch = TS_KEY_CH_INFO_SEQ[ch][0];
+                    idx = real_ch>>3;
+                    mask_bit = (real_ch&0x07);
+                    INDEX = idx;
+                    if(mode == LED_ON)
+                    {
+                      TLDAT |= 1<<mask_bit;
+                    }
+                    else
+                    {
+                      TLDAT &= ~(1<<mask_bit);
+                    }
+                    break;
+                  case LED_ALL_OFF:
+                    INDEX = 0;
+                    TLDAT = 0;
+                    INDEX = 1;
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 11  
+
+                    TLDAT = 0;
+                    INDEX = 2;
+                    TLDAT = 0;
+                    break;
+                }
+              }
+              void TKLED_Update(void)
+              {
+                static TYPE_SN xdata PrevTKSN = 0;
+                unsigned char i;
+                if(PrevTKSN == KeysFlagSN) return;
+                for(i = 0; i < KEY_CH_COUNT; i++)
+                {
+                  if(KeysFlagSN & MASK_TAB[i])
+                  {
+                    TKLED_Set(i,LED_ON);
+                  }
+                  else
+                  {
+                    TKLED_Set(i,LED_OFF);
+                  }
+                }
+                PrevTKSN = KeysFlagSN;
+              }
+              #endif
+ 634          
+ 635          #if TK_SENSITIVE_AUTO_TRIM_EN
+              void TK_TouchThdTrim(unsigned char ch)
+              {
+                unsigned int b1,b2,th1,c;
+                unsigned long int cal_tmp1;
+                unsigned int cal_tmp2;
+                  
+                b1 = TK_BASELINE_VALUE_INFO_SEQ[ch];
+                th1 = TS_KEY_CH_INFO_SEQ[ch][1];
+                b2 = TS_BaseLineData[ch];
+                cal_tmp1 = ((unsigned long int)b1*(unsigned long int)b2);
+                c = (unsigned int)(cal_tmp1/(b1-th1)) - b2;
+                cal_tmp2 = (unsigned int)(cal_tmp1/(b1+c));
+                TSKey_FingerThd[ch] = b2 - cal_tmp2;
+              }
+              #endif
+ 651          #if SUPPORT_ANTI_WATER_FUNCTION
+              unsigned char AntiWaterModeGetMaxDeltaCh(void)
+              {
+                unsigned char i;
+                unsigned long int CalcTemp1;
+                unsigned int CalcTemp2,CalcTemp3;
+                int Delta;
+                int max_delta;
+                char max_index;
+                max_delta = 0;
+                for(i = 0; i < KEY_CH_COUNT; i++)
+                {
+                  if(i == 0)
+                  {
+                    Delta = (int)TS_BaseLineData[i] - (int)TS_PostData[i];
+                  }
+                  else
+                  {
+                    CalcTemp1 =   (unsigned long int)TS_PostData[i] * (unsigned long int)TS_BaseLineData[0];
+                    CalcTemp2 =   (unsigned int)(CalcTemp1/TS_BaseLineData[i]);
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 12  
+
+                    CalcTemp3 =   TS_PostData[i] + TS_BaseLineData[0] - CalcTemp2;
+                    CalcTemp2 =   (unsigned int)(CalcTemp1/CalcTemp3);  
+                    Delta     =   (int)TS_BaseLineData[0] - (int)CalcTemp2;           
+                  }
+                  if(max_delta < Delta)
+                  {
+                    max_delta = Delta;
+                    max_index = i;
+                  }
+                }
+                return max_index;
+              }
+              #endif
+ 684          #endif
+ 685          #if SUPPORT_KEY
+ 686          void TSKey_DataDeal(void)
+ 687          {
+ 688   1        unsigned char i;
+ 689   1        unsigned char  TouchArea,NowArea;   
+ 690   1      
+ 691   1      #if SUPPORT_COVER_PANAL_AFTER_POWERON
+                unsigned char PanalToggleCount = 0;
+              #endif
+ 694   1        for(i = 0; i < KEY_CH_COUNT; i++)
+ 695   1        { 
+ 696   2      #if SUPPORT_ANTI_WATER_FUNCTION
+                  if(KeyPressedFlag)
+                  {
+                    if(PressedKeyIndex != i)
+                    {
+                      TS_FirstAreaData[i] = TS_BaseLineData[i];
+                      TS_AreaConfirmTimerSet(i,AREA_PNOISE);    
+                      continue;   
+                    }
+                  }
+              #endif
+ 707   2          TouchArea = TS_GetDataArea(i,TS_FirstAreaData[i],NOISE_THRESHOLD,(bit)(PreKeysFlagSN & MASK_TAB[i]));
+ 708   2          NowArea   = TS_GetDataArea(i,TS_PostData[i],NOISE_THRESHOLD,(bit)(PreKeysFlagSN & MASK_TAB[i]));
+ 709   2          
+ 710   2          if((NowArea != AREA_PNOISE)&&(NowArea != AREA_NNOISE))
+ 711   2          {
+ 712   3            TS_StableFlag = 0;    
+ 713   3          }
+ 714   2      #if SUPPORT_COVER_PANAL_AFTER_POWERON
+                  if((NowArea == AREA_PNOISE_PLUS) || (NowArea == AREA_FINGER_TOUCH))
+                  {
+                    PanalToggleCount++;
+                  }
+              #endif
+ 720   2          if(TouchArea == AREA_FINGER_TOUCH)
+ 721   2          {
+ 722   3            if(NowArea == AREA_FINGER_TOUCH)
+ 723   3            {
+ 724   4              if(!(PreKeysFlagSN & MASK_TAB[i]))
+ 725   4              {
+ 726   5                if(!TS_AreaConfirmTimer[i])
+ 727   5                {   
+ 728   6                  PreKeysFlagSN |= MASK_TAB[i];   
+ 729   6      #if (FINGER_LONG_TOUCH_TIME_LIMIT > 0)
+ 730   6                  TSKey_LongTouchLimitTimer[i] = FINGER_LONG_TOUCH_TIME_LIMIT;
+ 731   6      #endif
+ 732   6                  TS_AreaConfirmTimer[i] = FINGER_TOUCH_RELEASE_CONFIRM_TIME; 
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 13  
+
+ 733   6                }
+ 734   5              }
+ 735   4              else
+ 736   4              { 
+ 737   5      #if SUPPORT_ANTI_WATER_FUNCTION   
+                        if(i != AntiWaterModeGetMaxDeltaCh())
+                        {
+                          goto ANTI_WATER_MODE_KEY_RELEASE;
+                        }
+              #endif
+ 743   5                TS_AreaConfirmTimer[i] = FINGER_TOUCH_RELEASE_CONFIRM_TIME;
+ 744   5      #if (FINGER_LONG_TOUCH_TIME_LIMIT > 0)
+ 745   5                if(!TSKey_LongTouchLimitTimer[i])
+ 746   5                {
+ 747   6                  PreKeysFlagSN &= ~MASK_TAB[i];
+ 748   6                  TS_FirstAreaData[i] = TS_PostData[i];
+ 749   6                  TS_BaseLineData[i]  = TS_PostData[i];
+ 750   6      #if TK_SENSITIVE_AUTO_TRIM_EN
+                          TK_TouchThdTrim(i);
+              #endif
+ 753   6                  TS_AreaConfirmTimerSet(i,AREA_PNOISE);    
+ 754   6      #if SUPPORT_ANTI_WATER_FUNCTION
+                          KeyPressedFlag = 0;
+                          break;
+              #endif            
+ 758   6                }             
+ 759   5      #endif          
+ 760   5              }       
+ 761   4            }
+ 762   3            else
+ 763   3            {
+ 764   4              if(PreKeysFlagSN & MASK_TAB[i]) 
+ 765   4              {
+ 766   5                if(!TS_AreaConfirmTimer[i])
+ 767   5                {
+ 768   6      #if SUPPORT_ANTI_WATER_FUNCTION
+              ANTI_WATER_MODE_KEY_RELEASE:            
+                          KeyPressedFlag = 0;
+              #endif
+ 772   6                  PreKeysFlagSN &= ~MASK_TAB[i];
+ 773   6      
+ 774   6                  TS_FirstAreaData[i] = TS_BaseLineData[i];
+ 775   6                  TS_AreaConfirmTimerSet(i,AREA_PNOISE);
+ 776   6      #if SUPPORT_ANTI_WATER_FUNCTION
+                          break;
+              #endif
+ 779   6                }         
+ 780   5              }     
+ 781   4              else
+ 782   4              {
+ 783   5                TS_FirstAreaData[i] = TS_PostData[i];
+ 784   5                TS_AreaConfirmTimerSet(i,NowArea);
+ 785   5              } 
+ 786   4            } 
+ 787   3            continue;           
+ 788   3          } 
+ 789   2          else
+ 790   2          {
+ 791   3            if(NowArea == AREA_FINGER_TOUCH)
+ 792   3            {
+ 793   4              TS_FirstAreaData[i] = TS_PostData[i];
+ 794   4              TS_AreaConfirmTimerSet(i,AREA_FINGER_TOUCH);
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 14  
+
+ 795   4              continue;   
+ 796   4            } 
+ 797   3          }
+ 798   2          if(PreKeysFlagSN != 0) 
+ 799   2          {
+ 800   3            TS_FirstAreaData[i] = TS_BaseLineData[i];
+ 801   3            TS_AreaConfirmTimerSet(i,AREA_PNOISE);    
+ 802   3            continue;     
+ 803   3          }
+ 804   2          if(TS_AreaDeviateDetection(TS_FirstAreaData[i],TS_PostData[i],NOISE_THRESHOLD))    //ÅÐ¶ÏÆ«²îÊÇ·ñÔÚÔÊÐí·
+             -¶Î§ÄÚ
+ 805   2          { 
+ 806   3            if(!TS_AreaConfirmTimer[i])
+ 807   3            {
+ 808   4              TS_FirstAreaData[i] = TS_PostData[i];
+ 809   4              TS_BaseLineData[i]  = TS_PostData[i];
+ 810   4      
+ 811   4      #if TK_SENSITIVE_AUTO_TRIM_EN
+                      TK_TouchThdTrim(i);
+              #endif
+ 814   4              TS_AreaConfirmTimerSet(i,AREA_PNOISE);  
+ 815   4            } 
+ 816   3          }
+ 817   2          else
+ 818   2          {
+ 819   3            TS_FirstAreaData[i] = TS_PostData[i]; 
+ 820   3            TS_AreaConfirmTimerSet(i,NowArea);    
+ 821   3          }
+ 822   2        }   
+ 823   1      #if SUPPORT_ANTI_WATER_FUNCTION
+                if(KeysFlagSN == 0)
+                {
+                  if(PreKeysFlagSN != 0)
+                  {
+                    PressedKeyIndex = AntiWaterModeGetMaxDeltaCh();
+                    PreKeysFlagSN = MASK_TAB[PressedKeyIndex];
+              #if (FINGER_LONG_TOUCH_TIME_LIMIT > 0)
+                    TSKey_LongTouchLimitTimer[PressedKeyIndex] = FINGER_LONG_TOUCH_TIME_LIMIT;
+              #endif
+                    TS_AreaConfirmTimer[PressedKeyIndex] = FINGER_TOUCH_RELEASE_CONFIRM_TIME; 
+                    KeyPressedFlag = 1;
+                  }
+                }
+              #endif
+ 838   1      #if SUPPORT_COVER_PANAL_AFTER_POWERON
+                if(!PanalCoverJudgeFlag)
+                {
+                  if(PreKeysFlagSN != 0)
+                  {
+                    if(KeysFlagSN == 0)
+                    {
+                      PanalCoverJudgeFlag = 1;
+                      PanalCoverJudgeTimer = PANAL_COVER_JUDGE_TIME;    
+                    }
+                    else
+                    {
+                      if((PanalToggleCount >= JUDGE_TK_NUM)||(TS_RefChAbnormalJudge()))
+                      {
+                        PreKeysFlagSN = 0;
+                        PanalCoverJudgeFlag = 0;
+                        TS_BaseLineForceUpdate();
+                      }
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 15  
+
+                      KeysFlagSN  = PreKeysFlagSN;
+                    }
+                  }
+                  else
+                  {
+                    KeysFlagSN  = PreKeysFlagSN;
+                  }
+                }
+                else
+                {
+                  if(!PanalCoverJudgeTimer)
+                  {
+                    PanalCoverJudgeFlag = 0;
+                    KeysFlagSN = PreKeysFlagSN;
+                  }
+                  else
+                  {
+                    if((PanalToggleCount >= JUDGE_TK_NUM)||(TS_RefChAbnormalJudge()))
+                    {
+                      PreKeysFlagSN = 0;
+                      PanalCoverJudgeFlag = 0;
+                      TS_BaseLineForceUpdate();
+                    }     
+                  }
+                }
+              #else
+ 882   1      #if ANTI_SPEAKER_EN
+                if((PreKeysFlagSN != 0)&&(KeysFlagSN == 0))
+                {
+                  if(TS_RefChAbnormalJudge())
+                  {
+                    PreKeysFlagSN = 0;
+                    
+              #if SUPPORT_ANTI_WATER_FUNCTION
+                    KeyPressedFlag = 0;
+              #endif
+                    TS_BaseLineForceUpdate();   
+                  }
+                }
+              #endif
+ 896   1        KeysFlagSN  = PreKeysFlagSN;
+ 897   1      
+ 898   1      #endif
+ 899   1        if(KeysFlagSN != 0) 
+ 900   1        {
+ 901   2          ActiveTouchType = 1;
+ 902   2        }
+ 903   1        else
+ 904   1        {
+ 905   2          ActiveTouchType = 0;
+ 906   2        }
+ 907   1      }
+ 908          #endif
+ 909          #if SUPPORT_WHEEL_SLIDER
+              void TS_WheelSliderDeal(void)
+              {
+                unsigned char i;
+                unsigned int   Delta,Position;
+                bit WheelSliderTogFlag = 0;
+                TS_BaseCh = KEY_CH_COUNT; 
+                if(!W_S_RefChSet)
+                {
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 16  
+
+                  W_S_RefChSet = 1;   
+                  SetWheelSliderRefCh(WHEEL_SLIDER0_CH_COUNT);
+                }
+                
+              #if PRINT_WHEEL_SLIDER_DATA_EN
+                TK_Debug_UartPutChar(0xaa);
+                for(i = TS_BaseCh; i < TS_BaseCh + WHEEL_SLIDER0_CH_COUNT; i++)
+                {           
+                  if(TS_BaseLineData[i] > TS_PostData[i])
+                  {
+                    Delta = (int)TS_BaseLineData[i] - (int)TS_PostData[i];  
+                  }
+                  else
+                  {
+                    Delta = 0;
+                  }           
+                  TK_Debug_UartPutChar(i);
+                  TK_Debug_UartPutChar(TS_PostData[i]>>8);
+                  TK_Debug_UartPutChar(TS_PostData[i]);     
+                  TK_Debug_UartPutChar(TS_BaseLineData[i]>>8);
+                  TK_Debug_UartPutChar(TS_BaseLineData[i]); 
+                  TK_Debug_UartPutChar(Delta>>8); 
+                  TK_Debug_UartPutChar(Delta);                
+                }       
+              #endif
+              #if (WHEEL_OR_SLIDER_DEF0 == SLIDER)
+                Position = SliderTouchJudge(WHEEL_SLIDER0_CH_COUNT,WHEEL_SLIDER0_TOUCH_THD);
+              #elif (WHEEL_OR_SLIDER_DEF0 == WHEEL)
+                Position = WheelTouchJudge(WHEEL_SLIDER0_CH_COUNT,WHEEL_SLIDER0_TOUCH_THD);
+              #endif
+                if(Position != -1)
+                {
+                  TS_StableFlag = 0;
+                }
+                if(WheelSliderState == WHEEL_SLIDER_NO_TOUCH)
+                {
+                  if(!WheelSliderTouchFlag)
+                  {
+                    if(Position != -1)
+                    {
+                      WheelSliderTouchFlag = 1; 
+                      TSWheelSlider_TouchConfirmTimer = WHEEL_SLIDER_TOUCH_CONFIRM_TIME;        
+                    }
+                    else
+                    {
+                      for(i = TS_BaseCh; i < TS_BaseCh + WHEEL_SLIDER0_CH_COUNT; i++)
+                      {           
+                        if(TS_FirstAreaData[i] > TS_PostData[i]) 
+                        {
+                          Delta   = TS_FirstAreaData[i] - TS_PostData[i];
+                        }
+                        else
+                        {
+                          Delta   = TS_PostData[i] - TS_FirstAreaData[i];
+                        }         
+                        if(Delta <= WHEEL_SLIDER0_NOISE_THD) 
+                        {
+                          if(!TS_AreaConfirmTimer[i])
+                          {
+                            TS_FirstAreaData[i] = TS_PostData[i];
+                            TS_BaseLineData[i]  = TS_PostData[i];
+                            TS_AreaConfirmTimer[i] = WHEEL_SLIDER_BASELINE_UPDATE_TIME;
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 17  
+
+                          }             
+                        }
+                        else
+                        {
+                          TS_FirstAreaData[i] = TS_PostData[i];
+                          TS_AreaConfirmTimer[i] = WHEEL_SLIDER_BASELINE_UPDATE_TIME;
+                        }
+                      }
+                    }     
+                  } 
+                  else
+                  { 
+                    if(Position != -1)
+                    {
+                      if(!TSWheelSlider_TouchConfirmTimer)
+                      {
+                          WheelSliderState = WHEEL_SLIDER_TOUCH;  
+              #if (WHEEL_SLIDER_LONG_TOUCH_TIME_LIMIT > 0)
+                          TSWheelSlider_LongTouchLimitTimer = WHEEL_SLIDER_LONG_TOUCH_TIME_LIMIT;
+              #endif
+                      } 
+                    }
+                    else
+                    {
+                      WheelSliderTouchFlag = 0;
+                      for(i = TS_BaseCh; i < TS_BaseCh + WHEEL_SLIDER0_CH_COUNT; i++)
+                      {
+                        TS_AreaConfirmTimer[i] = WHEEL_SLIDER_BASELINE_UPDATE_TIME;
+                      }
+                    }
+                  }       
+                }
+                else if(WheelSliderState == WHEEL_SLIDER_TOUCH)
+                {   
+              #if (WHEEL_SLIDER_LONG_TOUCH_TIME_LIMIT > 0)
+                  if(!TSWheelSlider_LongTouchLimitTimer)
+                  {
+                    for(i = TS_BaseCh; i < TS_BaseCh + WHEEL_SLIDER0_CH_COUNT; i++)
+                    {
+                      TS_FirstAreaData[i] = TS_PostData[i];
+                      TS_BaseLineData[i]  = TS_PostData[i];
+                    }
+                    WheelSliderTouchFlag = 0;
+                    goto WHEEL_SLIDER_RELEASE;
+                  }
+              #endif
+                  if(WheelSliderTouchFlag)
+                  {
+                    if(Position == -1)  
+                    {
+                      WheelSliderTouchFlag = 0;
+                      TSWheelSlider_TouchConfirmTimer = WHEEL_SLIDER_TOUCH_RELEASE_CONFIRM_TIME;    
+                    }
+                  }
+                  else             
+                  {
+                    if(Position == -1)  
+                    {
+                      if(!TSWheelSlider_TouchConfirmTimer)
+                      {
+              WHEEL_SLIDER_RELEASE:
+                        WheelSliderState = WHEEL_SLIDER_NO_TOUCH; 
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 18  
+
+                        WheelSliderCapRateFilter = 0;
+                        WheelSliderPosition = -1;
+                        for(i = TS_BaseCh; i < TS_BaseCh + WHEEL_SLIDER0_CH_COUNT; i++)
+                        {
+                          TS_AreaConfirmTimer[i] = WHEEL_SLIDER_BASELINE_UPDATE_TIME;
+                        }
+                      }
+                    }
+                    else
+                    {
+                      WheelSliderTouchFlag = 1;       
+                    }
+                  }   
+                }   
+                if(WheelSliderState == WHEEL_SLIDER_TOUCH)
+                {
+                  if(Position != -1)
+                  {
+                    WheelSliderPosition = Position;
+                  } 
+              #if PRINT_WHEEL_SLIDER_POSITION_EN
+                  TK_Debug_UartPutChar(WheelSliderPosition/100+0x30);   
+                  TK_Debug_UartPutChar((WheelSliderPosition%100)/10+0x30);    
+                  TK_Debug_UartPutChar((WheelSliderPosition%10)+0x30);  
+              
+                  TK_Debug_UartPutChar('\r'); 
+                  TK_Debug_UartPutChar('\n'); 
+              #endif
+              #if PRINT_WHEEL_SLIDER_RATE_EN
+                  {
+                    unsigned char DeltaRate;
+                    DeltaRate = WheelSliderCapRateFilter/4;
+                    TK_Debug_UartPutChar(WheelSliderMaxIdx + 0x30); 
+                    TK_Debug_UartPutChar(' ');
+                      
+                    TK_Debug_UartPutChar(DeltaRate/100+0x30);   
+                    TK_Debug_UartPutChar((DeltaRate%100)/10+0x30);    
+                    TK_Debug_UartPutChar((DeltaRate%10)+0x30);  
+                    TK_Debug_UartPutChar('\r'); 
+                    TK_Debug_UartPutChar('\n');         
+                  }
+              #endif
+                }
+                else
+                {
+                  WheelSliderPosition = -1; 
+                }
+              
+                if(WheelSliderPosition != -1)
+                {
+                  ActiveTouchType = 2;
+                }
+                else
+                {
+                  ActiveTouchType = 0;
+                }
+              }
+              #endif  
+1100          #if TK_FREQ_JUMP_EN
+              void TFRC_TrimAllFreq(void)
+              {
+                CKCON |= TFCKE|IHCKE;
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 19  
+
+                TfrcFreq2Cfg = TFCFG;
+                RCTAGH =   (unsigned char)((((unsigned long int)FREQ_1*0xbebc)/FREQ_2)>>8);     
+                RCTAGL =   (unsigned char)(((unsigned long int)FREQ_1*0xbebc)/FREQ_2);    
+              
+                VCKDH = 0xAFC7/256;
+                VCKDL = 0xAFC7%256;
+              
+                TFCFG=0x1F;
+                RCCON = MODE(3) | MSEX(0) | CKSS(7);
+                while(RCCON&0xC0);
+                TfrcFreq1Cfg = TFCFG;
+              #if  (JUMP_FREQ_NUM > 2)    
+                RCTAGH =   (unsigned char)((((unsigned long int)FREQ_3*0xbebc)/FREQ_2)>>8);     
+                RCTAGL =   (unsigned char)(((unsigned long int)FREQ_3*0xbebc)/FREQ_2);      
+              
+                TFCFG=0x1F;
+                RCCON = MODE(3) | MSEX(0) | CKSS(7);
+                while(RCCON&0xC0);
+                TfrcFreq3Cfg = TFCFG;
+              #endif
+              }
+              #endif
+1126          void TS_init(void)
+1127          {
+1128   1        unsigned char i,ch_idx;
+1129   1      #if (DEBUG)
+                Debug_init();
+              #endif
+1132   1      #if TK_FREQ_JUMP_EN 
+                TFRC_TrimAllFreq();
+              #endif
+1135   1        TS_Cnt    = OPENED_TS_COUNT;
+1136   1        ch_idx = 0;
+1137   1        for(i = 0;i < OPENED_TS_COUNT; i++)
+1138   1        {
+1139   2      #if (SUPPORT_KEY && SUPPORT_WHEEL_SLIDER)
+                  if(i < KEY_CH_COUNT)
+                  {
+                    TS_CH[ch_idx++] = TS_KEY_CH_INFO_SEQ[i][0];
+                  }
+                  else
+                  {
+                    TS_CH[ch_idx++] = TS_WHEEL_SLIDER_CH_SEQ[i-KEY_CH_COUNT];
+                  }
+              #elif SUPPORT_KEY
+1149   2          TS_CH[ch_idx++] = TS_KEY_CH_INFO_SEQ[i][0];
+1150   2      #elif SUPPORT_WHEEL_SLIDER
+                  TS_CH[ch_idx++] = TS_WHEEL_SLIDER_CH_SEQ[i];
+              #endif
+1153   2        }
+1154   1        
+1155   1      #if (RTC_CLK_SELECT == IRCL)
+1156   1        CKCON |= ILCKE;
+1157   1        CKSEL |= RTCKS(1);
+1158   1      #elif (RTC_CLK_SELECT == XOSCL) 
+                CKCON |= XLCKE;
+                while(!(CKCON & XLSTA));
+              #endif
+1162   1      
+1163   1        RTCON = RTCE(1) | MSE(1) | HSE(1) | SCE(0) | MCE(0) | HCE(0);
+1164   1        RTMSS = 0;
+1165   1        
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 20  
+
+1166   1        INT8EN = 1;     
+1167   1        
+1168   1        TS_IO_init();
+1169   1        
+1170   1        
+1171   1        TKCFG = TKDIV(TKDIV_VAL)|TKTMS(TKTMS_VAL);    
+1172   1      #if (TK_CHARGE_REF_SELECT == SOURCE_VDD)
+                TKCON = TKST(0)|TKIE(1)|TMEN(0)|TWKE(0)|VRS(VRS_VAL);
+                TKPWC = TKPC(TK_PC_VAL)|VDS(0)|VIRS(0)|TKPWS(0)|TKCVS(0);   
+              #elif (TK_CHARGE_REF_SELECT == SOURCE_INNER) 
+1176   1        TKCON = TKST(0)|TKIE(1)|TMEN(0)|TWKE(0)|VRS(0);
+1177   1        TKPWC = TKPC(TK_PC_VAL)|VDS(VDS_VAL)|VIRS(VIRS_VAL)|TKPWS(1)|TKCVS(1);    
+1178   1      #endif
+1179   1        
+1180   1      #if SUPPORT_KEY
+1181   1      #if TK_SHARE_LED_EN
+                INDEX = 0;
+                TLEN  = 0xFF;
+                TLDAT = 0x00;
+                INDEX = 1;
+                TLEN  = 0xFF;
+                TLDAT = 0x00;
+                INDEX = 2;
+                TLEN  = 0xFF;
+                TLDAT = 0x00;
+              
+                TLCON = TLEIE(0)|TLKIE(0)|TLLIE(0)|TLLVS(0)|TLPOL(0);
+                TLCKS = TLCKS(2);
+              
+                TLCNTKH = 0x00;   
+                TLCNTKL = 0x20;
+              
+                TLCNTLH = LED_DRV_CNT/256;    
+                TLCNTLL = LED_DRV_CNT%256;
+              
+                TLCNTD = 0;
+              #ifdef LED_COM_SEL_P00  
+                TLCOMS = 0x01;
+                P00C  |= 0x80;
+                P00F   = 6;
+              #elif defined LED_COM_SEL_P01
+                TLCOMS = 0x02;
+                P01C  |= 0x80;
+                P01F   = 6;
+              #elif defined LED_COM_SEL_P02
+                TLCOMS = 0x03;
+                P02C  |= 0x80;
+                P02F   = 6;
+              #elif defined LED_COM_SEL_P03
+                TLCOMS = 0x04;
+                P03C  |= 0x80;
+                P03F   = 6;
+              #elif defined LED_COM_SEL_P04
+                TLCOMS = 0x05;
+                P04C  |= 0x80;
+                P04F   = 6;
+              #endif
+              #endif
+1224   1      #endif
+1225   1        INT3EN = 1; 
+1226   1        
+1227   1        TS_CycleScanDoneFlag = 0;
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 21  
+
+1228   1      #if SUPPORT_KEY
+1229   1        KeysFlagSN = 0;
+1230   1        PreKeysFlagSN = 0;
+1231   1      #endif  
+1232   1        ActiveTouchType = 0;
+1233   1      #if SUPPORT_KEY
+1234   1      #if SUPPORT_COVER_PANAL_AFTER_POWERON
+                PanalCoverJudgeFlag = 0;
+              #endif
+1237   1      #endif
+1238   1      #if SUPPORT_TOUCH_SLEEP_MODE
+                EnterStopScanTimer = ENTER_STOP_MODE_TIME;
+                TS_SleepEn = 1;
+                TS_SleepMode = 0;
+              #endif
+1243   1      #if SUPPORT_WHEEL_SLIDER
+                W_S_RefChSet = 0;
+              
+                WheelSliderState = WHEEL_SLIDER_NO_TOUCH;
+                WheelSliderTouchFlag = 0;
+                WheelSliderPosition = -1;   
+                WheelSliderCapRateFilter = 0;
+              #endif
+1251   1        TS_State = TS_INIT;
+1252   1        TS_Init_Step = 0;
+1253   1      #if ANTI_SPEAKER_EN 
+                RefChDataTimer = 0;
+              #endif
+1256   1      #if SUPPORT_KEY 
+1257   1      #if GENERATE_TS_KEY_EN
+1258   1        TK_State = TK_STATE_RELEASE;
+1259   1        TS_Key = 0;
+1260   1      #endif
+1261   1      #endif
+1262   1      }
+1263          
+1264          void TS_Action(void)
+1265          { 
+1266   1        switch(TS_State)
+1267   1        {
+1268   2          case TS_INIT:
+1269   2            TS_RunInit();     
+1270   2            break;
+1271   2          case TS_DEAL:   
+1272   2            if(TS_CycleScanDoneFlag)
+1273   2            {     
+1274   3              TS_CycleScanDoneFlag = 0;   
+1275   3      #if SUPPORT_KEY
+1276   3      #if ANTI_SPEAKER_EN
+                      TS_RefChCheck();
+              #endif
+1279   3      #endif
+1280   3              TS_DataFiltering();
+1281   3              TS_StableFlag = 1;
+1282   3      #if SUPPORT_KEY 
+1283   3              if(ActiveTouchType != 2)
+1284   3              {
+1285   4                TSKey_DataDeal(); 
+1286   4              }
+1287   3      #endif
+1288   3      #if (DEBUG)
+                      Debug_ParamLoad();
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 22  
+
+              #endif    
+1291   3      #if SUPPORT_WHEEL_SLIDER
+                      if(ActiveTouchType != 1)
+                      {
+                        TS_WheelSliderDeal();
+                      }
+              #endif        
+1297   3      #if SUPPORT_TOUCH_SLEEP_MODE
+                      if(!TS_StableFlag || !TS_SleepEn || (PCON & BIT2))  // ÔÚ·ÂÕæÄ£Ê½²»½øÈëSTOPÄ£Ê½
+                      {
+                        EnterStopScanTimer = ENTER_STOP_MODE_TIME;
+                      }     
+                      if(!EnterStopScanTimer&&TS_SleepEn)
+                      {
+              #if ENTER_SLEEP_PRINT_EN
+                        TK_Debug_UartPutChar('s');  
+                        TK_Debug_UartPutChar('l');  
+                        TK_Debug_UartPutChar('e');  
+                        TK_Debug_UartPutChar('e');  
+                        TK_Debug_UartPutChar('p');  
+                        TK_Debug_UartPutChar('\r'); 
+                        TK_Debug_UartPutChar('\n');   
+                        Delay_ms(1);
+              #endif
+                        TS_EnterSleepMode();    
+              #if ENTER_SLEEP_PRINT_EN          
+                        TK_Debug_UartPutChar('e');  
+                        TK_Debug_UartPutChar('x');  
+                        TK_Debug_UartPutChar('i');  
+                        TK_Debug_UartPutChar('t');  
+                        TK_Debug_UartPutChar('\r'); 
+                        TK_Debug_UartPutChar('\n');   
+              #endif
+                      }
+              #endif                    
+1325   3            }
+1326   2            if(TS_HalfSecCnt >= 5)
+1327   2            {
+1328   3              TKCON = 0;
+1329   3              TKIF = 0x3F;
+1330   3              TS_init();
+1331   3            }
+1332   2            break;
+1333   2          default:
+1334   2            break;
+1335   2        }
+1336   1      
+1337   1      #if SUPPORT_KEY 
+1338   1      #if TK_SHARE_LED_EN
+                TKLED_Update();
+              #endif
+1341   1      #if GENERATE_TS_KEY_EN
+1342   1        TS_GetKey();
+1343   1      #endif
+1344   1      #endif
+1345   1      }
+1346          #if SUPPORT_TOUCH_SLEEP_MODE
+              void TS_SleepScanStart(void)
+              { 
+                unsigned char i;  
+                for(i = 0; i < 6; i++)          
+                {
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 23  
+
+                  INDEX = i;
+                  if(TS_Index + i < TS_Cnt)
+                  {
+                    TKCHS = MPOL(0) | NPOL(1) | TKCHS((TS_CH[TS_Index+i])+1); 
+                  }
+                  else
+                  {
+                    TKCHS = 0; 
+                  }
+                }
+                TKCON |= TKST(1); 
+              }
+              void TS_EnterSleepMode(void)
+              {
+              //Ê¡µçÄ£Ê½²ÎÊýÅäÖÃ
+                #define STOP_TKDIV_VAL      0
+                #define STOP_TKTMS_VAL      15    //·ÅµçÊ±¼ä
+                #define STOP_VRS_VAL        7     //±È½ÏÆ÷ãÐÖµ  
+                unsigned char TS_SampleComplete = 0,i;
+                unsigned int xdata WakeUp_PThdVal[OPENED_TS_COUNT];
+                unsigned int xdata WakeUp_NThdVal[OPENED_TS_COUNT]; 
+                WORD_UNION TS_Data;
+                
+                Sys_Clk_Set_TFRC();
+              #if (SYSCLK_SRC == PLL)
+                PLLCON = 0;
+              #endif  
+                
+                TKCON = 0;
+                TKIF = 0x3F;
+                
+                TS_SleepMode = 1;
+                
+              #if TK_SHARE_LED_EN
+                INDEX = 0;
+                TLEN  = 0x00;
+                TLDAT = 0x00;
+                INDEX = 1;
+                TLEN  = 0x00;
+                TLDAT = 0x00;
+                INDEX = 2;
+                TLEN  = 0x00;
+                TLDAT = 0x00;
+              #endif
+                
+                RTCON &=  ~(MSE(1) | HSE(1));
+                RTCIF = RTC_MF | RTC_HF;  
+                
+                TKCON = (TKCON&0xF8) | VRS(STOP_VRS_VAL);
+                TKCON &= ~TKIE(1);
+                TKCFG = TKDIV(STOP_TKDIV_VAL)|TKTMS(STOP_TKTMS_VAL);    
+              
+              #if (OPENED_TS_COUNT%6 == 0)
+                TKMTS = (SLEEP_MODE_SCAN_INTERVAL_TIME*6)/(OPENED_TS_COUNT);
+              #else
+                TKMTS = (SLEEP_MODE_SCAN_INTERVAL_TIME)/((OPENED_TS_COUNT/6)+1);
+              #endif
+                
+                TKPWC = TKPC(1)|VDS(0)|VIRS(0)|TKPWS(0)|TKCVS(0);   //Ê¡µçÉèÎªVDD³äµç
+                
+              #ifdef LVD_RST_ENABLE
+                LVDCON = 0; 
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 24  
+
+              #endif    
+                I2CCON = 0;
+                CKCON = 0;
+                MECON |= BIT6;  
+                PWCON = (PWCON&0xF0)|0x07;  
+              
+                TS_Index = 0;
+                TS_SleepScanStart();
+                WDFLG = 0xA5;
+                
+                RTCON |= HSE(1);
+                
+                while(1)
+                {
+                  if(TS_SampleComplete)
+                  {
+                    CKCON &= ~TFCKE;    
+              #if (RTC_CLK_SELECT == IRCL)
+                    CKSEL = (CKSEL&0xF8) | CKSEL_IRCL;  //ÏµÍ³Ê±ÖÓÇÐ»»µ½IRCL  
+              #elif (RTC_CLK_SELECT == XOSCL) 
+                    CKSEL = (CKSEL&0xF8) | CKSEL_XOSCL; //ÇÐ»»ÏµÍ³Ê±ÖÓµ½XOSCL 
+              #endif  
+                    EA = 0;
+                    PCON |= (1<<1);
+                    _nop_();
+                    _nop_();
+                    _nop_();
+                    CKCON |= TFCKE;                         //Ê¹ÄÜTFRCÊ±ÖÓ
+                    CKSEL = (CKSEL&0xF8) | CKSEL_TFRC;      //ÇÐ»»ÏµÍ³Ê±ÖÓµ½TFRC    
+                    EA = 1;
+                  }
+                  if(TS_HalfSecCnt >= 5)
+                  {
+                    break;
+                  }
+                  if(TKIF != 0)
+                  {
+                    if(TS_HalfSecCnt) TS_HalfSecCnt--;
+                    for(i = 0; i < 6; i++)
+                    {
+                      if(TKIF & (1<<i))
+                      {
+                        TKIF = (1<<i);  
+                        INDEX = i;
+                        TS_Data.bVal[0] = TKMSH;
+                        TS_Data.bVal[1] = TKMSL;
+              
+                        if(TS_SampleComplete == 0)
+                        {
+                          WakeUp_PThdVal[TS_Index+i] = TS_Data.wVal - SLEEP_TOUTH_THD;
+                          WakeUp_NThdVal[TS_Index+i] = TS_Data.wVal + SLEEP_TOUTH_THD;
+                        }
+                        else 
+                        {
+                          if((TS_Data.wVal <= WakeUp_PThdVal[TS_Index+i])||(TS_Data.wVal >= WakeUp_NThdVal[TS_Index+i]))
+                          {
+                            goto SLEEP_EXIT;      
+                          }
+                        }
+                      }
+                    }
+                    if(TS_Index+6 < TS_Cnt)
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 25  
+
+                    {
+                      TS_Index += 6;
+                    }
+                    else 
+                    {
+                      TS_Index = 0;
+                      if(TS_SampleComplete == 0)
+                      {
+                        TS_SampleComplete = 1;        
+                        TKCON |= TMEN(1);         
+                      }
+                    }
+                    TS_SleepScanStart();  
+                    WDFLG = 0xA5;
+                  }
+                }
+              SLEEP_EXIT:
+                TKCON = 0;
+                TKIF = 0x3F;
+                PWCON = (PWCON&0xF0)|0x0D;  
+              #if (SYSCLK_SRC == PLL)
+                Sys_Clk_Set_PLL(PLL_Multiple);
+              #elif (SYSCLK_SRC == IRCH)  
+                Sys_Clk_Set_IRCH();
+              #endif
+              
+                TKCFG = TKDIV(TKDIV_VAL)|TKTMS(TKTMS_VAL);    
+              #if (TK_CHARGE_REF_SELECT == SOURCE_VDD)
+                TKCON = TKST(0)|TKIE(1)|TMEN(0)|TWKE(0)|VRS(VRS_VAL);
+                TKPWC = TKPC(TK_PC_VAL)|VDS(0)|VIRS(0)|TKPWS(0)|TKCVS(0);   
+              #elif (TK_CHARGE_REF_SELECT == SOURCE_INNER) 
+                TKCON = TKST(0)|TKIE(1)|TMEN(0)|TWKE(0)|VRS(0);
+                TKPWC = TKPC(TK_PC_VAL)|VDS(VDS_VAL)|VIRS(VIRS_VAL)|TKPWS(1)|TKCVS(1);    
+              #endif
+              #if TK_SHARE_LED_EN
+                INDEX = 0;
+                TLEN  = 0xFF;
+                INDEX = 1;
+                TLEN  = 0xFF;
+                INDEX = 2;
+                TLEN  = 0xFF;
+              #endif
+                RTCON |= HSE(1)|MSE(1);
+                TS_Index = 0;
+                TS_ScanStart();
+                EnterStopScanTimer = ENTER_STOP_MODE_TIME;
+                TS_SleepMode = 0;
+              #ifdef LVD_RST_ENABLE
+                LVDCON = 0xc1;  //ÉèÖÃLVD¸´Î»µçÑ¹Îª2V
+              #endif              
+              }
+              #endif
+1528          /*********************************************************************************************************
+             -************/
+1529          #if SUPPORT_KEY 
+1530          #if GENERATE_TS_KEY_EN
+1531          typedef struct 
+1532          { 
+1533            unsigned char   TogKeyNum;
+1534            unsigned char   TogKeyList[2];
+1535          }
+1536          T_TogKeyInfo;
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 26  
+
+1537          code unsigned char TS_KEY_TAB[]=
+1538          {
+1539            K1,K2,K3,K4,K5,K6,K7,K8,K9,K10,K11,K12,K13,K14,K15,K16,K17,K18,K19,K20
+1540          };
+1541          #if GENERATE_DOUBLE_KEY_EN
+              void TS_GetTogKeyInfor(T_TogKeyInfo *pKeyInfo)
+              {
+                unsigned char i,index;
+                pKeyInfo->TogKeyNum = 0;
+                index = 0;
+                for(i = 0; i < KEY_CH_COUNT; i++)
+                {
+                  if(KeysFlagSN & MASK_TAB[i])
+                  {
+                    pKeyInfo->TogKeyNum++;
+                    
+                    if(pKeyInfo->TogKeyNum <= 2)
+                    {
+                      pKeyInfo->TogKeyList[index++] = TS_KEY_TAB[i];
+                    }
+                  }
+                }
+              }
+              #endif
+1561          #if PRINT_TS_KEY_EN
+              void Hex2CharPrint(unsigned int integar)
+              {
+                unsigned char CharBuf[4];
+                unsigned char i, temp;
+                for(i = 0; i < 4; i++)
+                {
+                  temp = (unsigned char)(integar&0x0F);
+                  if(temp >= 0x0A)
+                  {
+                    CharBuf[i] = (temp - 0x0A) + 'A';
+                  }
+                  else
+                  {
+                    CharBuf[i] = temp + '0';
+                  }
+                  integar >>= 4;
+                }
+                TK_Debug_UartPutChar('0');  
+                TK_Debug_UartPutChar('x');  
+                TK_Debug_UartPutChar(CharBuf[2]);
+                TK_Debug_UartPutChar(CharBuf[1]);
+                TK_Debug_UartPutChar(CharBuf[0]);
+              }
+              #endif
+1586          void TS_GetKey(void)
+1587          {
+1588   1        static unsigned int KeyBak; 
+1589   1        static bit LongFlag;
+1590   1      #if GENERATE_DOUBLE_KEY_EN
+                T_TogKeyInfo KeyInfo;
+                TS_GetTogKeyInfor(&KeyInfo);
+              #else
+1594   1        static unsigned char KeyidxBak;
+1595   1        unsigned char i;
+1596   1      #endif
+1597   1        TS_Key = 0; 
+1598   1        if(TK_State == TK_STATE_RELEASE)
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 27  
+
+1599   1        {
+1600   2      #if GENERATE_DOUBLE_KEY_EN
+                  if(KeyInfo.TogKeyNum != 0)
+                  {     
+                    if(KeyInfo.TogKeyNum == 1)
+                    {
+                      KeyBak = (unsigned int)KeyInfo.TogKeyList[0];
+                      TK_State = TK_STATE_SINGLE_KEY_PRESS;       
+                    }
+                    else if(KeyInfo.TogKeyNum == 2)
+                    {
+                      KeyBak = ((unsigned int)KeyInfo.TogKeyList[0]<<5)|(unsigned int)KeyInfo.TogKeyList[1];
+                      TK_State = TK_STATE_DOUBLE_KEY_PRESS;
+                    }
+                    TS_Key = KeyBak;
+                    LongFlag = 0;
+                    TS_LongKeyTimer = TS_LONG_START_TIME;
+                  }
+              #else
+1618   2          if(KeysFlagSN != 0)
+1619   2          {
+1620   3            for(i = 0; i < KEY_CH_COUNT; i++)
+1621   3            {
+1622   4              if(KeysFlagSN & MASK_TAB[i])
+1623   4              {
+1624   5                KeyidxBak = i;
+1625   5                KeyBak = TS_KEY_TAB[i];
+1626   5                break;
+1627   5              }   
+1628   4            }       
+1629   3            TS_Key = KeyBak;
+1630   3            LongFlag = 0;
+1631   3            TS_LongKeyTimer = TS_LONG_START_TIME;
+1632   3            TK_State = TK_STATE_SINGLE_KEY_PRESS;   
+1633   3          }
+1634   2      #endif
+1635   2        }
+1636   1        else if(TK_State == TK_STATE_SINGLE_KEY_PRESS)
+1637   1        {
+1638   2      #if GENERATE_DOUBLE_KEY_EN  
+                  if(KeyInfo.TogKeyNum == 1)
+                  {
+                    if(KeyBak == (unsigned int)KeyInfo.TogKeyList[0])
+                    {
+                      if(!TS_LongKeyTimer)
+                      {
+                        if(!LongFlag)
+                        {
+                          LongFlag = 1;
+                          TS_Key = KeyBak | KEY_LONG_START;
+                        }
+                        else
+                        {
+                          TS_Key = KeyBak | KEY_LONG;
+                        }
+                        TS_LongKeyTimer = TS_LONG_TIME;
+                      }       
+                    }
+                    else 
+                    {
+                      if(!LongFlag)
+                      {
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 28  
+
+                        TS_Key = KeyBak | KEY_BREAK;
+                      }
+                      else
+                      {
+                        TS_Key = KeyBak | KEY_LONG_BREAK;
+                      }
+                      TK_State = TK_STATE_RELEASE;
+                    }
+                  }
+                  else if(KeyInfo.TogKeyNum == 2)
+                  {
+                    KeyBak = ((unsigned int)KeyInfo.TogKeyList[0]<<5) | (unsigned int)KeyInfo.TogKeyList[1];
+                    TK_State = TK_STATE_DOUBLE_KEY_PRESS;
+                    TS_Key = KeyBak;
+                    LongFlag = 0;
+                    TS_LongKeyTimer = TS_LONG_START_TIME;
+                  }
+                  else if(KeyInfo.TogKeyNum == 0)
+                  {
+                    if(!LongFlag)
+                    {
+                      TS_Key = KeyBak | KEY_BREAK;
+                    }
+                    else
+                    {
+                      TS_Key = KeyBak | KEY_LONG_BREAK;
+                    }
+                    TK_State = TK_STATE_RELEASE;
+                  }
+              #else
+1691   2          if(KeysFlagSN & MASK_TAB[KeyidxBak])
+1692   2          {
+1693   3              if(!TS_LongKeyTimer)
+1694   3              {
+1695   4                if(!LongFlag)
+1696   4                {
+1697   5                  LongFlag = 1;
+1698   5                  TS_Key = KeyBak | KEY_LONG_START;
+1699   5                }
+1700   4                else
+1701   4                {
+1702   5                  TS_Key = KeyBak | KEY_LONG;
+1703   5                }
+1704   4                TS_LongKeyTimer = TS_LONG_TIME;
+1705   4              }         
+1706   3          }
+1707   2          else
+1708   2          {
+1709   3            if(!LongFlag)
+1710   3            {
+1711   4              TS_Key = KeyBak | KEY_BREAK;
+1712   4            }
+1713   3            else
+1714   3            {
+1715   4              TS_Key = KeyBak | KEY_LONG_BREAK;
+1716   4            }
+1717   3            TK_State = TK_STATE_RELEASE;      
+1718   3          }
+1719   2      #endif
+1720   2        }
+1721   1      #if GENERATE_DOUBLE_KEY_EN  
+                else if(TK_State == TK_STATE_DOUBLE_KEY_PRESS)
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 29  
+
+                {
+                  if(KeyInfo.TogKeyNum == 2)
+                  {
+                    if(KeyBak == ((unsigned int)KeyInfo.TogKeyList[0]<<5)|(unsigned int)KeyInfo.TogKeyList[1])
+                    {
+                      if(!TS_LongKeyTimer)
+                      {
+                        if(!LongFlag)
+                        {
+                          LongFlag = 1;
+                          TS_Key = KeyBak | KEY_LONG_START;
+                        }
+                        else
+                        {
+                          TS_Key = KeyBak | KEY_LONG;
+                        }
+                        TS_LongKeyTimer = TS_LONG_TIME;
+                      }         
+                    }
+                  }
+                  else if(KeyInfo.TogKeyNum == 0)
+                  {
+                    if(!LongFlag)
+                    {
+                      TS_Key = KeyBak | KEY_BREAK;
+                    }
+                    else
+                    {
+                      TS_Key = KeyBak | KEY_LONG_BREAK;
+                    }
+                    TK_State = TK_STATE_RELEASE;    
+                  }
+                }
+              #endif
+1757   1      #if PRINT_TS_KEY_EN
+                if(TS_Key != 0)
+                {
+                  if((TS_Key & 0xFF00) == 0)
+                  {
+              #if GENERATE_DOUBLE_KEY_EN  
+                    if(TS_Key > 0x1F)
+                    {
+                      TK_Debug_UartPutChar('d');  
+                      TK_Debug_UartPutChar('o');  
+                      TK_Debug_UartPutChar('u');  
+                      TK_Debug_UartPutChar('b');  
+                      TK_Debug_UartPutChar('l');  
+                      TK_Debug_UartPutChar('e');      
+                    }
+                    else
+                    {
+                      TK_Debug_UartPutChar('s');  
+                      TK_Debug_UartPutChar('i');  
+                      TK_Debug_UartPutChar('n');  
+                      TK_Debug_UartPutChar('g');  
+                      TK_Debug_UartPutChar('l');  
+                      TK_Debug_UartPutChar('e');    
+                    }
+                    TK_Debug_UartPutChar(' ');  
+              #endif
+                    TK_Debug_UartPutChar('k');  
+                    TK_Debug_UartPutChar('e');  
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 30  
+
+                    TK_Debug_UartPutChar('y');  
+                    TK_Debug_UartPutChar(' ');  
+                    TK_Debug_UartPutChar('=');  
+                    TK_Debug_UartPutChar(' ');  
+                    Hex2CharPrint(TS_Key);
+                    TK_Debug_UartPutChar('\r'); 
+                    TK_Debug_UartPutChar('\n'); 
+                  }
+                  else if(TS_Key & KEY_BREAK)
+                  {
+                    TK_Debug_UartPutChar('k');  
+                    TK_Debug_UartPutChar('e');  
+                    TK_Debug_UartPutChar('y');  
+                    TK_Debug_UartPutChar(' ');  
+                    TK_Debug_UartPutChar('u');  
+                    TK_Debug_UartPutChar('p');  
+                    TK_Debug_UartPutChar('\r'); 
+                    TK_Debug_UartPutChar('\n');       
+                  }
+                  else if(TS_Key & KEY_LONG_START)
+                  {
+                    TK_Debug_UartPutChar('l');  
+                    TK_Debug_UartPutChar('o');  
+                    TK_Debug_UartPutChar('n');  
+                    TK_Debug_UartPutChar('g');  
+                    TK_Debug_UartPutChar(' ');  
+                    TK_Debug_UartPutChar('s');  
+                    TK_Debug_UartPutChar('t');  
+                    TK_Debug_UartPutChar('a');  
+                    TK_Debug_UartPutChar('r');  
+                    TK_Debug_UartPutChar('t');  
+                    TK_Debug_UartPutChar('\r'); 
+                    TK_Debug_UartPutChar('\n');     
+                  }
+                  else if(TS_Key & KEY_LONG)
+                  {
+                    TK_Debug_UartPutChar('l');  
+                    TK_Debug_UartPutChar('o');  
+                    TK_Debug_UartPutChar('n');  
+                    TK_Debug_UartPutChar('g');  
+                    TK_Debug_UartPutChar('\r'); 
+                    TK_Debug_UartPutChar('\n');     
+                  }
+                }
+              #endif
+1830   1      }
+1831          #endif
+1832          #endif
+1833          /*********************************************************************************************************
+             -************/
+1834          
+1835          /*********************************************************************************************************
+             -************/
+1836          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1567    ----
+   CONSTANT SIZE    =     56    ----
+   XDATA SIZE       =    162    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     13      26
+C51 COMPILER V9.56.0.0   TS_API                                                            08/03/2020 17:20:28 PAGE 31  
+
+   IDATA SIZE       =     10    ----
+   BIT SIZE         =      3    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

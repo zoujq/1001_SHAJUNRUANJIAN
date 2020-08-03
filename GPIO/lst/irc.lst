@@ -1,0 +1,346 @@
+C51 COMPILER V9.51   IRC                                                                   06/26/2017 17:01:24 PAGE 1   
+
+
+C51 COMPILER V9.51, COMPILATION OF MODULE IRC
+OBJECT MODULE PLACED IN .\hex\irc.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE irc.c ROM(COMPACT) BROWSE DEBUG OBJECTEXTEND PRINT(.\lst\irc.lst) TABS(2) O
+                    -BJECT(.\hex\irc.obj)
+
+line level    source
+
+   1          #ifndef _IRC_C_
+   2          #define _IRC_C_
+   3          
+   4          /*********************************************************************************************************
+             -************/
+   5          #include "ca51f_config.h"
+   6          #if (IC_TYPE == IC_TYPE_CA51F2X)
+   7          #include "../../includes/ca51f2sfr.h"
+   8          #include "../../includes/ca51f2xsfr.h"
+   9          #include "../../includes/gpiodef_f2.h"
+  10          #elif (IC_TYPE == IC_TYPE_CA51F3X)
+              #include "../../includes/ca51f3sfr.h"
+              #include "../../includes/ca51f3xsfr.h"
+              #include "../../includes/gpiodef_f3.h"
+              #endif
+  15          #include "../../includes/system.h"
+  16          #include "../../Library/includes/uart.h"
+  17          #include "../../Library/includes/sample.h"
+  18          #include "../../Library/includes/exint.h"
+  19          #include "irc.h"
+  20          #include "key.h"
+  21          #include <intrins.h>
+  22          /*********************************************************************************************************
+             -************/
+  23          unsigned char IR_Code[4];         //Ò£¿ØÂëÖµ
+  24          bit IRC_SyncFlag;                 //Í¬²½ÐÅºÅ±êÖ¾£¬ Îª1±íÊ¾ÒÑ½ÓÊÕµ½Í¬²½ÐÅºÅ
+  25          bit IR_RxEndFlag;
+  26          unsigned char IRC_BreakTimer;
+  27          unsigned char IRC_LongKeyTimer;
+  28          bit IRC_MonitorFlag;
+  29          bit IRC_LongStartFlag;
+  30          unsigned int IRC_Msg;
+  31          unsigned char IR_BitCount;        //Ò£¿ØÂëÖµÎ»Ö¸Ê¾
+  32          #if (IR_MODE == SAMPLE_MOD)
+              unsigned char OverFlowCount;      //¼ÆÊýÒç³ö¼ÆÊýÆ÷
+              #elif (IR_MODE == INT_MODE)
+  35          unsigned char IRC_JudgeValidPulseTimer;
+  36          unsigned int LastTimVal;
+  37          #endif
+  38          #if (IR_MODE == SAMPLE_MOD)
+              void INT9_ISR (void) interrupt 14   
+              {
+                unsigned int PulseWidth;
+                if(SMSTA & SMEF)
+                {
+                  SMSTA |= SMEF;
+                
+                  if(OverFlowCount == 0)
+                  {
+                    PulseWidth = (SMDATH&0x7F)*256 + SMDATL;   //»ñÈ¡Âö³å¿í¶È
+                    if(!IRC_SyncFlag)     
+                    {
+                      if((PulseWidth > (SYN_WIDTH1-WIDTH*6)) && (PulseWidth < (SYN_WIDTH1+WIDTH*6))) //Èç¹ûÎ´Í¬²½£¬ ÅÐ¶Ïµ±Ç°
+             -Âö³åÊÇ·ñÍ¬²½ÐÅºÅ
+C51 COMPILER V9.51   IRC                                                                   06/26/2017 17:01:24 PAGE 2   
+
+                      {
+                        IRC_SyncFlag = 1;
+                        IR_BitCount = 0;
+                      }
+                    }
+                    else
+                    {
+                      if((PulseWidth > (DAT_1_WIDTH-WIDTH*2)) && (PulseWidth < (DAT_1_WIDTH+WIDTH*2)))    //ÅÐ¶Ïµ±Ç°Âö³åÊÇ·ñÎ
+             -»1
+                      {
+                        IR_Code[IR_BitCount/8] |= (1<<(7-(IR_BitCount%8))); 
+                        IR_BitCount++;  
+                      }
+                      else if((PulseWidth > (DAT_0_WIDTH-WIDTH)) && (PulseWidth < (DAT_0_WIDTH+WIDTH)))   //ÅÐ¶Ïµ±Ç°Âö³åÊÇ·ñ
+             -Î»0
+                      {
+                        IR_Code[IR_BitCount/8] &= ~(1<<(7-(IR_BitCount%8)));  
+                        IR_BitCount++;  
+                      }
+                      else
+                      {
+                        IRC_SyncFlag = 0;     //Èç¹û²»ÊÇÎ»1»ò0µÄ¿í¶È£¬ ÔòµÈ´ý½ÓÊÕÏÂÒ»¸öÍ¬²½ÐÅºÅ
+                      }
+                      if((IR_BitCount == 32) && IRC_SyncFlag)    //32Î»Ò£¿ØÂë½ÓÊÕÍê³É
+                      {
+                        IRC_SyncFlag = 0;
+                        IR_RxEndFlag = 1;
+              
+                      }
+                    }
+                  }
+                  OverFlowCount=0;         //¸´Î»Òç³ö¼ÆÊýÆ÷
+                  IRC_BreakTimer = 13;
+                }
+                if(SMSTA & SMOF)
+                {
+                  SMSTA |= SMOF;
+                  if(OverFlowCount < 0xFF) 
+                  {
+                    OverFlowCount++;      //¼ÆÊýÒç³öÀÛ¼Ó
+                  }
+                } 
+              }
+              
+              void Sample_init(void)
+              {                            
+                GPIO_Init(P70F,P70_SAMPLE_SETTING);       //ÉèÖÃP70Îª²ÉÑù¹Ü½Å
+              
+                SMCON = SMEN_SYS_CLK | SMOE(1) | SMMD(1);     //³õÊ¼»¯SAMPLE¹¦ÄÜ
+                SMDIV = 6;                   //ÉèÖÃSAMPLEÊ±ÖÓ·ÖÆµ
+                SMVTHL = (SYN_WIDTH1*2)%256;         //ÉèÖÃÒç³öÊ±ÖÓ¿í¶È
+                SMVTHH = (SYN_WIDTH1*2)/256;
+                SMCON |= SMIE(1); 
+                INT9EN = 1;                 //Ê¹ÄÜSAMPLEÖÐ¶Ï     
+              }
+              #elif (IR_MODE == INT_MODE)
+ 106          void ExInt2_init(void)
+ 107          {
+ 108   1        INDEX = 0;
+ 109   1        EPCON = EPPL(1) | P70_INDEX;  
+ 110   1        GPIO_Init(P70F,INPUT);  
+ 111   1        INT2EN = 1; 
+C51 COMPILER V9.51   IRC                                                                   06/26/2017 17:01:24 PAGE 3   
+
+ 112   1        EPIE |= BIT0; 
+ 113   1        EXIP |= BIT0; 
+ 114   1      }
+ 115          void Timer1_init(void)
+ 116          {
+ 117   1        TMOD=(TMOD&0xCF)|0x10;
+ 118   1        TR1 = 1;
+ 119   1      }
+ 120          void INT2_ISR (void) interrupt 7
+ 121          {
+ 122   1        unsigned int CrtTimVal,PulseWidth;  
+ 123   1        if(EPIF & BIT0)
+ 124   1        {
+ 125   2          EPIF = BIT0;
+ 126   2          TR1=0;
+ 127   2          CrtTimVal=((unsigned int)TH1)<<8|(unsigned int)TL1;
+ 128   2          TR1 = 1;    
+ 129   2      
+ 130   2          if(IRC_JudgeValidPulseTimer)
+ 131   2          {
+ 132   3            PulseWidth = CrtTimVal - LastTimVal;  
+ 133   3            
+ 134   3            if(!IRC_SyncFlag)
+ 135   3            {
+ 136   4              if((PulseWidth > (SYN_WIDTH1-WIDTH*6)) && (PulseWidth < (SYN_WIDTH1+WIDTH*6))) //Èç¹ûÎ´Í¬²½£¬ ÅÐ¶Ïµ±Ç°
+             -Âö³åÊÇ·ñÍ¬²½ÐÅºÅ
+ 137   4              {
+ 138   5                IRC_SyncFlag = 1;
+ 139   5                IR_BitCount = 0;
+ 140   5              }
+ 141   4            }
+ 142   3            else
+ 143   3            {
+ 144   4              if((PulseWidth > (DAT_1_WIDTH-WIDTH*2)) && (PulseWidth < (DAT_1_WIDTH+WIDTH*2)))    //ÅÐ¶Ïµ±Ç°Âö³åÊÇ·ñÎ
+             -»1
+ 145   4              {
+ 146   5                IR_Code[IR_BitCount/8] |= (1<<(7-(IR_BitCount%8))); 
+ 147   5                IR_BitCount++;  
+ 148   5              }
+ 149   4              else if((PulseWidth > (DAT_0_WIDTH-WIDTH)) && (PulseWidth < (DAT_0_WIDTH+WIDTH)))   //ÅÐ¶Ïµ±Ç°Âö³åÊÇ·ñ
+             -Î»0
+ 150   4              {
+ 151   5                IR_Code[IR_BitCount/8] &= ~(1<<(7-(IR_BitCount%8)));  
+ 152   5                IR_BitCount++;  
+ 153   5              }
+ 154   4              else
+ 155   4              {
+ 156   5                IRC_SyncFlag = 0;     //Èç¹û²»ÊÇÎ»1»ò0µÄ¿í¶È£¬ ÔòµÈ´ý½ÓÊÕÏÂÒ»¸öÍ¬²½ÐÅºÅ
+ 157   5              }
+ 158   4              if((IR_BitCount == 32) && IRC_SyncFlag)    //32Î»Ò£¿ØÂë½ÓÊÕÍê³É
+ 159   4              {
+ 160   5                IRC_SyncFlag = 0;
+ 161   5                IR_RxEndFlag = 1;
+ 162   5              }     
+ 163   4            }
+ 164   3          } 
+ 165   2          LastTimVal = CrtTimVal;
+ 166   2          IRC_JudgeValidPulseTimer = 3;
+ 167   2          IRC_BreakTimer = 13;        
+ 168   2        }
+ 169   1      }
+ 170          #endif
+C51 COMPILER V9.51   IRC                                                                   06/26/2017 17:01:24 PAGE 4   
+
+ 171          void Timer0_init(void)
+ 172          {
+ 173   1        TMOD=(TMOD&0xFC)|0x01;
+ 174   1        TL0 = 0x00;
+ 175   1        TH0 = 0xF4;
+ 176   1        TR0 = 1;
+ 177   1        ET0 = 1;  
+ 178   1      }
+ 179          void TIMER0_ISR (void) interrupt 1     //10ms 
+ 180          {
+ 181   1        TL0 = 0x00;
+ 182   1        TH0 = 0xF4;
+ 183   1      
+ 184   1        if(IRC_BreakTimer) IRC_BreakTimer--;
+ 185   1        if(IRC_LongKeyTimer) IRC_LongKeyTimer--;
+ 186   1      #if (IR_MODE == INT_MODE)
+ 187   1        if(IRC_JudgeValidPulseTimer) IRC_JudgeValidPulseTimer--;
+ 188   1      #endif
+ 189   1      }
+ 190          void IRC_init(void)
+ 191          {
+ 192   1      #if (IR_MODE == SAMPLE_MOD)
+                Sample_init();
+                
+                IR_RxEndFlag = 0;
+                OverFlowCount=0;  
+              #elif (IR_MODE == INT_MODE)
+ 198   1        ExInt2_init();
+ 199   1        Timer1_init();
+ 200   1        IRC_JudgeValidPulseTimer = 0;
+ 201   1      #endif
+ 202   1        IRC_SyncFlag = 0;
+ 203   1        IRC_BreakTimer = 0;
+ 204   1        IRC_MonitorFlag = 0;
+ 205   1        IRC_LongStartFlag = 0;
+ 206   1        IRC_Msg = KEY_INVALID;
+ 207   1      }
+ 208          unsigned char IRC_GetKeyCode(unsigned char irc_code)
+ 209          {
+ 210   1        unsigned char i;
+ 211   1        code unsigned char IRKEY_TABLE[][2]=
+ 212   1        {
+ 213   1          {K1,162}, 
+ 214   1          {K2,98},
+ 215   1          {K3,226},
+ 216   1          {K4,34},
+ 217   1          {K5,2},
+ 218   1          {K6,194},
+ 219   1          {K7,224},
+ 220   1          {K8,168},
+ 221   1          {K9,144},  
+ 222   1          {K10,152},
+ 223   1        };
+ 224   1        for(i=0;i<sizeof(IRKEY_TABLE)/2;i++)
+ 225   1        {
+ 226   2          if(IRKEY_TABLE[i][1] == irc_code)
+ 227   2          {
+ 228   3            return IRKEY_TABLE[i][0];
+ 229   3          }
+ 230   2        }
+ 231   1        return 0;
+ 232   1      }
+C51 COMPILER V9.51   IRC                                                                   06/26/2017 17:01:24 PAGE 5   
+
+ 233          unsigned int IRC_GetMsg(void)
+ 234          {
+ 235   1        static unsigned int KeyBak;
+ 236   1        unsigned int Msg = KEY_INVALID;
+ 237   1        if(!IRC_MonitorFlag)
+ 238   1        {
+ 239   2          if(IR_RxEndFlag)
+ 240   2          {
+ 241   3            IR_RxEndFlag = 0;
+ 242   3      #ifdef PRINT_EN
+ 243   3            uart_printf("code1 = 0x%x,code2 = 0x%x,code3 = 0x%x,code4 = 0x%x \n",(unsigned int)IR_Code[0],(unsigned
+             - int)IR_Code[1],(unsigned int)IR_Code[2],(unsigned int)IR_Code[3]); 
+ 244   3      #endif      
+ 245   3            if((IR_Code[0] == USER_CODE1) && (IR_Code[1] == USER_CODE2) && (IR_Code[2] == ~IR_Code[3]))
+ 246   3            {
+ 247   4              Msg = (unsigned int)IRC_GetKeyCode(IR_Code[2]);
+ 248   4              KeyBak = Msg;
+ 249   4              IRC_MonitorFlag = 1;
+ 250   4              IRC_LongStartFlag = 0;
+ 251   4              IRC_LongKeyTimer = IRC_LONG_START_TIME;
+ 252   4            }
+ 253   3          }       
+ 254   2        } 
+ 255   1        else
+ 256   1        {
+ 257   2          if(!IRC_BreakTimer)
+ 258   2          {
+ 259   3            if(!IRC_LongStartFlag)
+ 260   3            {
+ 261   4              Msg = KeyBak | KEY_BREAK;
+ 262   4            }
+ 263   3            else
+ 264   3            {
+ 265   4              Msg = KeyBak | KEY_LONG_BREAK;
+ 266   4            }
+ 267   3            IRC_MonitorFlag = 0;      
+ 268   3          }
+ 269   2          else
+ 270   2          {
+ 271   3            if(!IRC_LongKeyTimer)
+ 272   3            {
+ 273   4              if(!IRC_LongStartFlag)
+ 274   4              {
+ 275   5                IRC_LongStartFlag = 1;
+ 276   5                Msg = KeyBak | KEY_LONG_START;
+ 277   5              }
+ 278   4              else
+ 279   4              {
+ 280   5                Msg = KeyBak | KEY_LONG;
+ 281   5              }
+ 282   4              IRC_LongKeyTimer = IRC_LONG_TIME;
+ 283   4            }     
+ 284   3          }
+ 285   2        }
+ 286   1        return Msg;
+ 287   1      }
+ 288          void IRC_MainLoop(void)
+ 289          {
+ 290   1          IRC_init();
+ 291   1          Timer0_init();
+ 292   1          while(1)
+ 293   1          {
+C51 COMPILER V9.51   IRC                                                                   06/26/2017 17:01:24 PAGE 6   
+
+ 294   2            IRC_Msg = IRC_GetMsg();
+ 295   2            if(IRC_Msg != KEY_INVALID)
+ 296   2            {
+ 297   3      #ifdef PRINT_EN
+ 298   3              uart_printf("IRC_Msg = 0x%x\n",IRC_Msg);  
+ 299   3      #endif    
+ 300   3            }
+ 301   2          }
+ 302   1      }
+ 303          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    558    ----
+   CONSTANT SIZE    =     90    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      4    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
