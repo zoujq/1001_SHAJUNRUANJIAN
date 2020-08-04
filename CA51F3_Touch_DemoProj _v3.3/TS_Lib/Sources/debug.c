@@ -6,6 +6,7 @@
 #include "includes\ca51f3sfr.h"
 #include "includes\ca51f3xsfr.h"
 #include "includes\gpiodef_f3.h"
+#include <stdio.h>
 
 #include "Library\Includes\rtc.h"		
 #include "Library\Includes\system_clock.h"		
@@ -92,36 +93,27 @@ void I2C_ISR(void)
 }
 void Debug_init(void)
 {
-#ifdef  I2C_SELECT_P30_P31
-	I2CIOS = 0;
-	GPIO_Init(P30F,P30_I2C_SDA_SETTING);
-	GPIO_Init(P31F,P31_I2C_SCL_SETTING);
-#elif defined I2C_SELECT_P11_P12
-	I2CIOS = 1;
-	GPIO_Init(P11F,P11_I2C_SDA_SETTING);
-	GPIO_Init(P12F,P12_I2C_SCL_SETTING);
-//	P11C &= ~0x20;	
-//	P12C &= ~0x20;
-#endif
-	I2CCON = I2CE(1) | I2CIE(1) | STA(0) | STP(0)| CKHD(0) | AAK(1)| CBSE(0) | STFE(0);		
-	I2CADR = (I2C_ADDR>>1);
-	I2CCR = 0x20;
-	
-	INT6EN = 1;
-	EXIP |= (1<<4);			//优先级设置为最高
+//#ifdef  I2C_SELECT_P30_P31
+//	I2CIOS = 0;
+//	GPIO_Init(P30F,P30_I2C_SDA_SETTING);
+//	GPIO_Init(P31F,P31_I2C_SCL_SETTING);
+//#elif defined I2C_SELECT_P11_P12
+//	I2CIOS = 1;
+//	GPIO_Init(P11F,P11_I2C_SDA_SETTING);
+//	GPIO_Init(P12F,P12_I2C_SCL_SETTING);
+////	P11C &= ~0x20;	
+////	P12C &= ~0x20;
+//#endif
+//	I2CCON = I2CE(1) | I2CIE(1) | STA(0) | STP(0)| CKHD(0) | AAK(1)| CBSE(0) | STFE(0);		
+//	I2CADR = (I2C_ADDR>>1);
+//	I2CCR = 0x20;
+//	
+//	INT6EN = 1;
+//	EXIP |= (1<<4);			//优先级设置为最高
 }
 void Debug_ParamLoad(void)
 {
-	unsigned char i;
-	KeysFlagSN_Debug = (unsigned long int)KeysFlagSN;
-	TS_State_Debug = TS_State;
-	Key_Cnt_Debug = KEY_CH_COUNT;
-	for(i = 0; i < KEY_CH_COUNT; i++)
-	{
-		TS_CH_Debug[i] = TS_CH[i];
-	}
-	TS_RefPostData  = TS_PostData[OPENED_TS_COUNT];	
-	TS_RefChBaseLineData  = TS_RefPostData;	
+	printf("3:%d\n\r",TS_PostData[0]&0x0FFF);
 }
 #endif
 #endif

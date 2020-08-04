@@ -1,4 +1,4 @@
-C51 COMPILER V9.56.0.0   UART                                                              08/04/2020 11:17:00 PAGE 1   
+C51 COMPILER V9.56.0.0   UART                                                              08/04/2020 12:39:55 PAGE 1   
 
 
 C51 COMPILER V9.56.0.0, COMPILATION OF MODULE UART
@@ -62,7 +62,7 @@ line level    source
               //  TMOD = (TMOD&0xCF)|0x20;
               //  TH1 = 0xff;   //19200
               //  TL1 = 0xff;
-C51 COMPILER V9.56.0.0   UART                                                              08/04/2020 11:17:00 PAGE 2   
+C51 COMPILER V9.56.0.0   UART                                                              08/04/2020 12:39:55 PAGE 2   
 
               //  ET1=0;
               //  TR1=1;    
@@ -126,7 +126,7 @@ line level    source
                   {
                     uart0_send.tail++;
                     uart0_send.tail %= UART0_TX_BUF_SIZE;
-C51 COMPILER V9.56.0.0   UART                                                              08/04/2020 11:17:00 PAGE 3   
+C51 COMPILER V9.56.0.0   UART                                                              08/04/2020 12:39:55 PAGE 3   
 
                     S0BUF=uart0_tx_buf[uart0_send.tail];        
                   }
@@ -138,92 +138,92 @@ line level    source
               }
               #endif
  120          #ifdef UART1_EN
-              void Uart1_Initial(unsigned long int baudrate)
-              {
-                unsigned int value_temp;
-              
-                uart1_send.head=0;
-                uart1_send.tail=0;
-                uart1_rev.head=0;
-                uart1_rev.tail=0;
-                uart1_tx_flag=0;
-              
-                value_temp = 0x400 - FOSC/(baudrate*32);
-              
-                GPIO_Init(P11F,P11_UART1_TX_SETTING);
-                GPIO_Init(P12F,P12_UART1_RX_SETTING);
-                
-                S1RELH = (unsigned char)(value_temp>>8);
-                S1RELL = (unsigned char)(value_temp);
-                
-                S1CON = 0xD0;
-                ES1 = 1;  
-              }
-              void Uart1_PutChar(unsigned char bdat)
-              {
-                unsigned char free_space;
-                unsigned char tail_tmp;
-              
-                while(1)
-                {   
-                  tail_tmp = uart1_send.tail;
-                  if(uart1_send.head < tail_tmp)
-                  {
-                    free_space = tail_tmp - uart1_send.head;
-                  }
-                  else
-                  {
-                    free_space = UART1_TX_BUF_SIZE + tail_tmp - uart1_send.head;
-                  }   
-                  if(free_space > 1)
-                  {
-                    ES1 = 0; 
-                    uart1_send.head++;
-                    uart1_send.head %= UART1_TX_BUF_SIZE;
-                    uart1_tx_buf[uart1_send.head] = bdat;
-                    if(!uart1_tx_flag)
-                    {
-                      ES1 = 1;
-                      uart1_send.tail++;
-                      uart1_send.tail %= UART1_TX_BUF_SIZE;   
-                      S1BUF = uart1_tx_buf[uart1_send.tail];        
-                      uart1_tx_flag = 1;    
-                    }
-                    else
-C51 COMPILER V9.56.0.0   UART                                                              08/04/2020 11:17:00 PAGE 4   
+ 121          void Uart1_Initial(unsigned long int baudrate)
+ 122          {
+ 123   1        unsigned int value_temp;
+ 124   1      
+ 125   1        uart1_send.head=0;
+ 126   1        uart1_send.tail=0;
+ 127   1        uart1_rev.head=0;
+ 128   1        uart1_rev.tail=0;
+ 129   1        uart1_tx_flag=0;
+ 130   1      
+ 131   1        value_temp = 0x400 - FOSC/(baudrate*32);
+ 132   1      
+ 133   1        GPIO_Init(P11F,P11_UART1_TX_SETTING);
+ 134   1        GPIO_Init(P12F,P12_UART1_RX_SETTING);
+ 135   1        
+ 136   1        S1RELH = (unsigned char)(value_temp>>8);
+ 137   1        S1RELL = (unsigned char)(value_temp);
+ 138   1        
+ 139   1        S1CON = 0xD0;
+ 140   1        ES1 = 1;  
+ 141   1      }
+ 142          void Uart1_PutChar(unsigned char bdat)
+ 143          {
+ 144   1        unsigned char free_space;
+ 145   1        unsigned char tail_tmp;
+ 146   1      
+ 147   1        while(1)
+ 148   1        {   
+ 149   2          tail_tmp = uart1_send.tail;
+ 150   2          if(uart1_send.head < tail_tmp)
+ 151   2          {
+ 152   3            free_space = tail_tmp - uart1_send.head;
+ 153   3          }
+ 154   2          else
+ 155   2          {
+ 156   3            free_space = UART1_TX_BUF_SIZE + tail_tmp - uart1_send.head;
+ 157   3          }   
+ 158   2          if(free_space > 1)
+ 159   2          {
+ 160   3            ES1 = 0; 
+ 161   3            uart1_send.head++;
+ 162   3            uart1_send.head %= UART1_TX_BUF_SIZE;
+ 163   3            uart1_tx_buf[uart1_send.head] = bdat;
+ 164   3            if(!uart1_tx_flag)
+ 165   3            {
+ 166   4              ES1 = 1;
+ 167   4              uart1_send.tail++;
+ 168   4              uart1_send.tail %= UART1_TX_BUF_SIZE;   
+ 169   4              S1BUF = uart1_tx_buf[uart1_send.tail];        
+ 170   4              uart1_tx_flag = 1;    
+ 171   4            }
+ 172   3            else
+C51 COMPILER V9.56.0.0   UART                                                              08/04/2020 12:39:55 PAGE 4   
 
-                    {
-                      ES1 = 1;  
-                    }     
-                    break;
-                  }
-                }
-              }
-              void UART1_ISR (void) interrupt 6 
-              {
-                if(S1CON & BIT0)
-                {
-                  S1CON = (S1CON&~(BIT0|BIT1))|BIT0;       
-                  uart1_rev.head++;
-                    uart1_rev.head %= UART1_RX_BUF_SIZE;
-                  uart1_rx_buf[uart1_rev.head]=S1BUF;
-                }
-                if(S1CON & BIT1)
-                {
-                  S1CON = (S1CON&~(BIT0|BIT1))|BIT1;  
-                  if(uart1_send.head!=uart1_send.tail)
-                  {
-                    uart1_send.tail++;
-                    uart1_send.tail %= UART1_TX_BUF_SIZE;
-                    S1BUF=uart1_tx_buf[uart1_send.tail];        
-                  }
-                  else
-                  {
-                    uart1_tx_flag=0;
-                  }   
-                }
-              }
-              #endif
+ 173   3            {
+ 174   4              ES1 = 1;  
+ 175   4            }     
+ 176   3            break;
+ 177   3          }
+ 178   2        }
+ 179   1      }
+ 180          void UART1_ISR (void) interrupt 6 
+ 181          {
+ 182   1        if(S1CON & BIT0)
+ 183   1        {
+ 184   2          S1CON = (S1CON&~(BIT0|BIT1))|BIT0;       
+ 185   2          uart1_rev.head++;
+ 186   2            uart1_rev.head %= UART1_RX_BUF_SIZE;
+ 187   2          uart1_rx_buf[uart1_rev.head]=S1BUF;
+ 188   2        }
+ 189   1        if(S1CON & BIT1)
+ 190   1        {
+ 191   2          S1CON = (S1CON&~(BIT0|BIT1))|BIT1;  
+ 192   2          if(uart1_send.head!=uart1_send.tail)
+ 193   2          {
+ 194   3            uart1_send.tail++;
+ 195   3            uart1_send.tail %= UART1_TX_BUF_SIZE;
+ 196   3            S1BUF=uart1_tx_buf[uart1_send.tail];        
+ 197   3          }
+ 198   2          else
+ 199   2          {
+ 200   3            uart1_tx_flag=0;
+ 201   3          }   
+ 202   2        }
+ 203   1      }
+ 204          #endif
  205          
  206          
  207          /*********************************************************************************************************
@@ -234,18 +234,17 @@ line level    source
  211   1        Uart1_PutChar(c);
  212   1        return 0;
  213   1      }
-*** WARNING C280 IN LINE 209 OF Library\Sources\uart.c: 'c': unreferenced local variable
  214          
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =      5    ----
+   CODE SIZE        =    292    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =   ----    ----
+   XDATA SIZE       =    124    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----       1
+   DATA SIZE        =   ----       4
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =   ----    ----
+   BIT SIZE         =      1    ----
    EDATA SIZE       =   ----    ----
    HDATA SIZE       =   ----    ----
    XDATA CONST SIZE =   ----    ----
@@ -253,4 +252,4 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
 END OF MODULE INFORMATION.
 
 
-C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

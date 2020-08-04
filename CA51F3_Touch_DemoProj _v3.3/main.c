@@ -92,15 +92,17 @@ void main(void)
 
 	EA = 1;
 
-	//printf("start\n\r");
+	printf("start\n\r");
 	TS_init();	
 	
 
 	while(1)
 	{		
-		
+		Delay_ms(100);
 		TS_Action();
 
+		
+		printf("5:%d\n\r",TS_PostData[0]&0x0FFF);
 		if(KeysFlagSN != 0)
 		{
 			//printf("KeysFlagSN:%X\n\r",KeysFlagSN);
