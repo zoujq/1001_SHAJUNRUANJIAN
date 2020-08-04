@@ -100,6 +100,8 @@ void Debug_init(void)
 	I2CIOS = 1;
 	GPIO_Init(P11F,P11_I2C_SDA_SETTING);
 	GPIO_Init(P12F,P12_I2C_SCL_SETTING);
+//	P11C &= ~0x20;	
+//	P12C &= ~0x20;
 #endif
 	I2CCON = I2CE(1) | I2CIE(1) | STA(0) | STP(0)| CKHD(0) | AAK(1)| CBSE(0) | STFE(0);		
 	I2CADR = (I2C_ADDR>>1);

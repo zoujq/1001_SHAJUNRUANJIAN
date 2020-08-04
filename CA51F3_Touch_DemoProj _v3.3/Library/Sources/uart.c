@@ -5,22 +5,14 @@
 #include "includes\ca51f3xsfr.h"
 #include "includes\gpiodef_f3.h"
 
-#include "Library\includes\delay.h"
-#include "Library\includes\uart.h"
-#include "Library\includes\system_clock.h"
-#include "Library\Includes\rtc.h"	
-#include "Library\Includes\pwm.h"	
 #include "includes\system.h"
-#include "Library\includes\adc.h"
-#include "Library\includes\wdt.h"
-
+#include "Library\includes\uart.h"
 #include <intrins.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <absacc.h>
-
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 #ifdef UART0_EN
@@ -28,8 +20,8 @@ void Uart0_Initial(unsigned long int baudrate)
 {
 	unsigned int value_temp;
 
-	P31F = P31_UART0_RX_SETTING;
-	P30F = P30_UART0_TX_SETTING;
+	GPIO_Init(P31F,P31_UART0_RX_SETTING);
+	GPIO_Init(P30F,P30_UART0_TX_SETTING);
 	
 	uart0_send.head=0;
 	uart0_send.tail=0;
@@ -59,8 +51,6 @@ void Uart0_Initial(unsigned long int baudrate)
 //	TR1=1;		
 //	PCON |= 0x80;	 	
 /************************************************************************************************************************/
-
-
 	S0CON = 0x50;	 
 	ES0 = 1;
 }
@@ -68,6 +58,7 @@ void Uart0_PutChar(unsigned char bdat)
 {
 	unsigned char free_space;
 	unsigned char tail_tmp;
+
 	while(1)
 	{				
 		tail_tmp = uart0_send.tail;	
@@ -139,11 +130,9 @@ void Uart1_Initial(unsigned long int baudrate)
 
 	value_temp = 0x400 - FOSC/(baudrate*32);
 
-
-	P12F = P12_UART1_RX_SETTING;
-	P11F = P11_UART1_TX_SETTING;
-
-
+	GPIO_Init(P11F,P11_UART1_TX_SETTING);
+	GPIO_Init(P12F,P12_UART1_RX_SETTING);
+	
 	S1RELH = (unsigned char)(value_temp>>8);
 	S1RELL = (unsigned char)(value_temp);
 	
@@ -154,6 +143,7 @@ void Uart1_PutChar(unsigned char bdat)
 {
 	unsigned char free_space;
 	unsigned char tail_tmp;
+
 	while(1)
 	{		
 		tail_tmp = uart1_send.tail;
@@ -189,16 +179,16 @@ void Uart1_PutChar(unsigned char bdat)
 }
 void UART1_ISR (void) interrupt 6	
 {
-	if(S1CON & 0x01)
+	if(S1CON & BIT0)
 	{
-		S1CON = (S1CON&0xFC)|0x01;			 
+		S1CON = (S1CON&~(BIT0|BIT1))|BIT0;			 
 		uart1_rev.head++;
-	  uart1_rev.head %= UART1_RX_BUF_SIZE;
+	   	uart1_rev.head %= UART1_RX_BUF_SIZE;
 		uart1_rx_buf[uart1_rev.head]=S1BUF;
 	}
-	if(S1CON & 0x02)
+	if(S1CON & BIT1)
 	{
-		S1CON = (S1CON&0xFC)|0x02;			
+		S1CON = (S1CON&~(BIT0|BIT1))|BIT1;	
 		if(uart1_send.head!=uart1_send.tail)
 		{
 			uart1_send.tail++;
@@ -213,28 +203,12 @@ void UART1_ISR (void) interrupt 6
 }
 #endif
 
-#ifdef PRINT_EN
-	#ifdef UART0_PRINT
-		#define Uart_PutChar	Uart0_PutChar
-	#elif defined  UART1_PRINT
-		#define Uart_PutChar	Uart1_PutChar
-	#endif
-void UartPutStr(char *str)
-{
-	while(*str)
-	{	
- 		Uart_PutChar(*str++);
-	}
-}
-void uart_printf(char *fmt,...) 
-{
-    va_list ap;
-    char xdata string[256];
-    va_start(ap,fmt);
-    vsprintf(string,fmt,ap);
-    UartPutStr(string);
-    va_end(ap);
-}
-#endif
+
 /*********************************************************************************************************************/
 #endif
+char putchar (char c)
+{
+	Uart1_PutChar(c);
+  return 0;
+}
+

@@ -2,17 +2,15 @@
 #define _TK_API_C_
 
 /*********************************************************************************************************************/
-#include "ca51f_config.h"
-#include "includes\ca51f3sfr.h"
-#include "includes\ca51f3xsfr.h"
-#include "includes\gpiodef_f3.h"
+#include "include/ca51f_config.h"		
+#include "include/ca51f3sfr.h"
+#include "include/ca51f3xsfr.h"
+#include "include/gpiodef_f3.h"
+#include "include/system_clock.h"
 
-#include "Library\Includes\rtc.h"		
-#include "Library\Includes\system_clock.h"		
-#include "Library\includes\uart.h"
-#include "includes\system.h"
-#include "Library\includes\adc.h"
-#include "Library\includes\delay.h"
+#include "include/uart.h"
+#include "include/delay.h"
+#include "include/adc.h"
 #include <intrins.h>
 /*********************************************************************************************************************/
 #include "TS_Lib\Includes\ts_configuration.h"

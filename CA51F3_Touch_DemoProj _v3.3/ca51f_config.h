@@ -30,18 +30,10 @@
 
 
 /*************************UART功能开关宏定义********************************************************************/
-#define PRINT_EN				//使用uart_printf函数打印使能
+// #define UART0_EN			//如果使用UART0，打开此宏定义
+//#define UART1_EN			//如果使用UART1，打开此宏定义
 
-#ifdef PRINT_EN
-	//#define UART0_PRINT		//如果使用UART0打印，打开此宏定义
-	#define UART1_PRINT		//如果使用UART1打印，打开此宏定义
-			
-	#ifdef UART0_PRINT
-		#define UART0_EN
-	#elif defined  UART1_PRINT
-		#define UART1_EN
-	#endif
-#endif
+
 #ifdef UART0_EN
 	#define UART0_BAUTRATE		115200
 #endif

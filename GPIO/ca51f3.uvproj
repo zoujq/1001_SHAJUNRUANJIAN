@@ -395,6 +395,26 @@
             </File>
           </Files>
         </Group>
+        <Group>
+          <GroupName>TS_lib</GroupName>
+          <Files>
+            <File>
+              <FileName>debug.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\TS_Lib\Sources\debug.c</FilePath>
+            </File>
+            <File>
+              <FileName>ts_api.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\TS_Lib\Sources\ts_api.c</FilePath>
+            </File>
+            <File>
+              <FileName>ts_service.LIB</FileName>
+              <FileType>4</FileType>
+              <FilePath>.\TS_Lib\Sources\ts_service.LIB</FilePath>
+            </File>
+          </Files>
+        </Group>
       </Groups>
     </Target>
   </Targets>

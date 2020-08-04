@@ -1,4 +1,4 @@
-C51 COMPILER V9.56.0.0   MAIN                                                              08/03/2020 17:14:36 PAGE 1   
+C51 COMPILER V9.56.0.0   MAIN                                                              08/03/2020 17:49:25 PAGE 1   
 
 
 C51 COMPILER V9.56.0.0, COMPILATION OF MODULE MAIN
@@ -23,177 +23,190 @@ line level    source
   12          #include "include/delay.h"
   13          #include "include/adc.h"
   14          #include <intrins.h>
-  15          
-  16          unsigned char read_inner_trim(void)       
-  17          {
-  18   1        unsigned char value;
-  19   1        FSCMD = 0x80; 
-  20   1        PTSH  = 0x00;       
-  21   1        PTSL  = 0x24;      
-  22   1        FSCMD = 0x81;           
-  23   1        value = FSDAT;
-  24   1        FSCMD = 0;
-  25   1        return (value&0x3F);
-  26   1      }
-  27          
-  28          unsigned int get_ntc_ad_value()
-  29          {
-  30   1        unsigned int AD_Value;
-  31   1        ADCON = AST(0) | ADIE(0) | HTME(7) | VSEL(ADC_REF_VDD);       //设置ADC参考电压为VDD
-  32   1        ADCFGH = AOPS(NO_AMP) | VTRIM(read_inner_trim());             //加载内部1.5V校准值
-  33   1        ADCFGL = ACKD(7) | ADCHS(ADC_CH4);  //选择ADC4通道
-  34   1      
-  35   1        
-  36   1        ADCON |= AST(1);                                //启动ADC转换
-  37   1        while(!(ADCON & ADIF));                         //等待ADC转换完成
-  38   1        ADCON |= ADIF;                                  //清除ADC中断标志
-  39   1        AD_Value = ADCDH*256 + ADCDL;                   //读取AD值
-  40   1        AD_Value >>= 4; 
-  41   1        return AD_Value;
-  42   1      }
-  43          
-  44          unsigned int get_bat_ad_value()
-  45          {
-  46   1        unsigned int AD_Value;
-  47   1        ADCON = AST(0) | ADIE(0) | HTME(7) | VSEL(ADC_REF_VDD);       //设置ADC参考电压为VDD
-  48   1        ADCFGH = AOPS(NO_AMP) | VTRIM(read_inner_trim());             //加载内部1.5V校准值
-  49   1        ADCFGL = ACKD(7) | ADCHS(ADC_CH6);  //选择ADC6通道
-  50   1        
-  51   1        ADCON |= AST(1);                                //启动ADC转换
-  52   1        while(!(ADCON & ADIF));                         //等待ADC转换完成
-  53   1        ADCON |= ADIF;                                  //清除ADC中断标志
-C51 COMPILER V9.56.0.0   MAIN                                                              08/03/2020 17:14:36 PAGE 2   
+  15          #include <string.h>
+  16          #include <stdarg.h>
+  17          #include <stdlib.h>
+  18          #include <stdio.h>
+  19          #include <absacc.h>
+  20          
+  21          /*********************************************************************************************************
+             -************/
+  22          #include "TS_Lib\Includes\ts_configuration.h"
+  23          #include "TS_Lib\Includes\ts_def.h"
+  24          #include "TS_Lib\Includes\ts_api.h"
+  25          #include "TS_Lib\Includes\ts_service.h"      
+  26          /*********************************************************************************************************
+             -************/
+  27          unsigned char read_inner_trim(void)       
+  28          {
+  29   1        unsigned char value;
+  30   1        FSCMD = 0x80; 
+  31   1        PTSH  = 0x00;       
+  32   1        PTSL  = 0x24;      
+  33   1        FSCMD = 0x81;           
+  34   1        value = FSDAT;
+  35   1        FSCMD = 0;
+  36   1        return (value&0x3F);
+  37   1      }
+  38          
+  39          unsigned int get_ntc_ad_value()
+  40          {
+  41   1        unsigned int AD_Value;
+  42   1        ADCON = AST(0) | ADIE(0) | HTME(7) | VSEL(ADC_REF_VDD);       //设置ADC参考电压为VDD
+  43   1        ADCFGH = AOPS(NO_AMP) | VTRIM(read_inner_trim());             //加载内部1.5V校准值
+  44   1        ADCFGL = ACKD(7) | ADCHS(ADC_CH4);  //选择ADC4通道
+  45   1      
+  46   1        
+  47   1        ADCON |= AST(1);                                //启动ADC转换
+  48   1        while(!(ADCON & ADIF));                         //等待ADC转换完成
+  49   1        ADCON |= ADIF;                                  //清除ADC中断标志
+  50   1        AD_Value = ADCDH*256 + ADCDL;                   //读取AD值
+  51   1        AD_Value >>= 4; 
+C51 COMPILER V9.56.0.0   MAIN                                                              08/03/2020 17:49:25 PAGE 2   
 
-  54   1        AD_Value = ADCDH*256 + ADCDL;                   //读取AD值
-  55   1        AD_Value >>= 4; 
-  56   1        return AD_Value;
-  57   1      }
-  58          /*********************************************************************************************************
+  52   1        return AD_Value;
+  53   1      }
+  54          
+  55          unsigned int get_bat_ad_value()
+  56          {
+  57   1        unsigned int AD_Value;
+  58   1        ADCON = AST(0) | ADIE(0) | HTME(7) | VSEL(ADC_REF_VDD);       //设置ADC参考电压为VDD
+  59   1        ADCFGH = AOPS(NO_AMP) | VTRIM(read_inner_trim());             //加载内部1.5V校准值
+  60   1        ADCFGL = ACKD(7) | ADCHS(ADC_CH6);  //选择ADC6通道
+  61   1        
+  62   1        ADCON |= AST(1);                                //启动ADC转换
+  63   1        while(!(ADCON & ADIF));                         //等待ADC转换完成
+  64   1        ADCON |= ADIF;                                  //清除ADC中断标志
+  65   1        AD_Value = ADCDH*256 + ADCDL;                   //读取AD值
+  66   1        AD_Value >>= 4; 
+  67   1        return AD_Value;
+  68   1      }
+  69          /*********************************************************************************************************
              -************
-  59            本例程以P00为例，设置P00为不同模式，所有IO用法与P00相同。
-  60          **********************************************************************************************************
+  70            本例程以P00为例，设置P00为不同模式，所有IO用法与P00相同。
+  71          **********************************************************************************************************
              -***********/
-  61          void main(void)
-  62          {
-  63   1      #if (SYSCLK_SRC == PLL)
+  72          void main(void)
+  73          {
+  74   1      #if (SYSCLK_SRC == PLL)
                 Sys_Clk_Set_PLL(PLL_Multiple);  //设置系统时钟为PLL，PLL_Multiple为倍频倍数
               #endif
-  66   1        
-  67   1      #ifdef UART0_EN
+  77   1        
+  78   1      #ifdef UART0_EN
                 Uart0_Initial(UART0_BAUTRATE);  //初始化UART0
               #endif
-  70   1        
-  71   1      #ifdef UART1_EN
-  72   1        Uart1_Initial(UART1_BAUTRATE);  //初始化UART1
-  73   1      #endif
-  74   1      
-  75   1        EA = 1;                         //开全局中断
-  76   1      
-  77   1      #ifdef PRINT_EN
-  78   1        //uart_printf("GPIO Demo Code\n");
-  79   1      #endif
-  80   1      
-  81   1      /**************************************************************************************************/
-  82   1        //P00F = OUTPUT;    //P00设置为推挽输出模式
-  83   1        uart_printf("start\n\r");
-  84   1        
-  85   1        P32F = OUTPUT;            //R
-  86   1        P33F = OUTPUT;            //B
-  87   1        P00F = OUTPUT;            //G
-  88   1        
-  89   1        P30F = OUTPUT;            //backlight
-  90   1        P31F = OUTPUT;            //speak
-  91   1        
-  92   1        //NTC ADC start
-  93   1        P13F = OUTPUT;//NTC VCC 
-  94   1        P14F = P14_ADC4_SETTING;  //设置P14为ADC引脚功能
-  95   1      
-  96   1        //charge check
-  97   1        P15F = INPUT;           //CHARG_CHECK
-  98   1        
-  99   1        //bat adc
- 100   1        P16F = P16_ADC6_SETTING;  //设置P16为BAT ADC引脚功能
- 101   1      
+  81   1        
+  82   1      #ifdef UART1_EN
+  83   1        Uart1_Initial(UART1_BAUTRATE);  //初始化UART1
+  84   1      #endif
+  85   1      
+  86   1        EA = 1;                         //开全局中断
+  87   1      
+  88   1      #ifdef PRINT_EN
+  89   1        //uart_printf("GPIO Demo Code\n");
+  90   1      #endif
+  91   1      
+  92   1      /**************************************************************************************************/
+  93   1        //P00F = OUTPUT;    //P00设置为推挽输出模式
+  94   1        uart_printf("start\n\r");
+  95   1        
+  96   1        P32F = OUTPUT;            //R
+  97   1        P33F = OUTPUT;            //B
+  98   1        P00F = OUTPUT;            //G
+  99   1        
+ 100   1        P30F = OUTPUT;            //backlight
+ 101   1        P31F = OUTPUT;            //speak
  102   1        
- 103   1        P32=0;
- 104   1        P33=0;
- 105   1        P00=0;
- 106   1        P30=0;
- 107   1        P31=1;
- 108   1        while(1)
- 109   1        {
- 110   2      
- 111   2            
- 112   2          uart_printf("get_bat_ad_value(%d)\n\r",get_bat_ad_value());
- 113   2          uart_printf("get_ntc_ad_value(%d)\n\r",get_ntc_ad_value());
-C51 COMPILER V9.56.0.0   MAIN                                                              08/03/2020 17:14:36 PAGE 3   
+ 103   1        //NTC ADC start
+ 104   1        P13F = OUTPUT;//NTC VCC 
+ 105   1        P14F = P14_ADC4_SETTING;  //设置P14为ADC引脚功能
+ 106   1      
+ 107   1        //charge check
+ 108   1        P15F = INPUT;           //CHARG_CHECK
+ 109   1        
+ 110   1        //bat adc
+ 111   1        P16F = P16_ADC6_SETTING;  //设置P16为BAT ADC引脚功能
+C51 COMPILER V9.56.0.0   MAIN                                                              08/03/2020 17:49:25 PAGE 3   
 
- 114   2          
- 115   2      
- 116   2          Delay_ms(2000);
- 117   2        }
- 118   1        
- 119   1        uart_printf("test2\n");
- 120   1      /***********************************************************************************/   
- 121   1      
- 122   1      
- 123   1      /***********************************************************************************/   
- 124   1        P00F = INPUT;     //P00设置为输入模式
- 125   1        while(1)
- 126   1        {
- 127   2          if(P00)
- 128   2          {
- 129   3      #ifdef PRINT_EN
- 130   3            uart_printf("P00 Input High!\n");
- 131   3      #endif
- 132   3          }
- 133   2          else
- 134   2          {
- 135   3      #ifdef PRINT_EN
- 136   3            uart_printf("P00 Input Low!\n");
- 137   3      #endif
- 138   3          }
- 139   2        }
- 140   1      /***********************************************************************************/ 
- 141   1        
- 142   1        
- 143   1        
- 144   1      
- 145   1      /***********************************************************************************/ 
- 146   1        P00F = OUTPUT;            //P00设置为推挽输出模式
- 147   1        P00C |= 0x80;             //P00使能高灌电流模式
- 148   1      /***********************************************************************************/ 
- 149   1      
- 150   1        
+ 112   1      
+ 113   1        
+ 114   1        P32=0;
+ 115   1        P33=0;
+ 116   1        P00=0;
+ 117   1        P30=0;
+ 118   1        P31=1;
+ 119   1        while(1)
+ 120   1        {
+ 121   2      
+ 122   2            
+ 123   2          uart_printf("get_bat_ad_value(%d)\n\r",get_bat_ad_value());
+ 124   2          uart_printf("get_ntc_ad_value(%d)\n\r",get_ntc_ad_value());
+ 125   2          
+ 126   2      
+ 127   2          Delay_ms(2000);
+ 128   2        }
+ 129   1        
+ 130   1        uart_printf("test2\n");
+ 131   1      /***********************************************************************************/   
+ 132   1      
+ 133   1      
+ 134   1      /***********************************************************************************/   
+ 135   1        P00F = INPUT;     //P00设置为输入模式
+ 136   1        while(1)
+ 137   1        {
+ 138   2          if(P00)
+ 139   2          {
+ 140   3      #ifdef PRINT_EN
+ 141   3            uart_printf("P00 Input High!\n");
+ 142   3      #endif
+ 143   3          }
+ 144   2          else
+ 145   2          {
+ 146   3      #ifdef PRINT_EN
+ 147   3            uart_printf("P00 Input Low!\n");
+ 148   3      #endif
+ 149   3          }
+ 150   2        }
  151   1      /***********************************************************************************/ 
- 152   1        P00F = INPUT|PU_EN;       //P00设置为输入模式并使能上拉电阻
- 153   1        P00C |= 0x20;             //上拉电阻选择为强上拉
- 154   1      //  P00C &= ~0x20;          //上拉电阻选择为弱上拉
- 155   1      /***********************************************************************************/
- 156   1      
- 157   1      
- 158   1      
+ 152   1        
+ 153   1        
+ 154   1        
+ 155   1      
+ 156   1      /***********************************************************************************/ 
+ 157   1        P00F = OUTPUT;            //P00设置为推挽输出模式
+ 158   1        P00C |= 0x80;             //P00使能高灌电流模式
  159   1      /***********************************************************************************/ 
- 160   1        P00F = INPUT|PD_EN;       //P00设置为输入模式并使能下拉电阻
- 161   1        P00C |= 0x10;             //下拉电阻选择为强下拉
- 162   1      //  P00C &= ~0x10;          //下拉电阻选择为弱下拉
- 163   1      /***********************************************************************************/ 
- 164   1      
- 165   1      
- 166   1      /***********************************************************************************/ 
- 167   1        P00F = P00_COM0_SETTING;    //P00设置为COM引脚功能
- 168   1      /***********************************************************************************/ 
- 169   1        
- 170   1        while(1)
- 171   1        {
- 172   2      
- 173   2        }
- 174   1      }
- 175          #endif
-C51 COMPILER V9.56.0.0   MAIN                                                              08/03/2020 17:14:36 PAGE 4   
+ 160   1      
+ 161   1        
+ 162   1      /***********************************************************************************/ 
+ 163   1        P00F = INPUT|PU_EN;       //P00设置为输入模式并使能上拉电阻
+ 164   1        P00C |= 0x20;             //上拉电阻选择为强上拉
+ 165   1      //  P00C &= ~0x20;          //上拉电阻选择为弱上拉
+ 166   1      /***********************************************************************************/
+ 167   1      
+ 168   1      
+ 169   1      
+ 170   1      /***********************************************************************************/ 
+ 171   1        P00F = INPUT|PD_EN;       //P00设置为输入模式并使能下拉电阻
+ 172   1        P00C |= 0x10;             //下拉电阻选择为强下拉
+ 173   1      //  P00C &= ~0x10;          //下拉电阻选择为弱下拉
+C51 COMPILER V9.56.0.0   MAIN                                                              08/03/2020 17:49:25 PAGE 4   
 
-*** WARNING C294 IN LINE 119 OF source\main.c: unreachable code
-*** WARNING C294 IN LINE 146 OF source\main.c: unreachable code
+ 174   1      /***********************************************************************************/ 
+ 175   1      
+ 176   1      
+ 177   1      /***********************************************************************************/ 
+ 178   1        P00F = P00_COM0_SETTING;    //P00设置为COM引脚功能
+ 179   1      /***********************************************************************************/ 
+ 180   1        
+ 181   1        while(1)
+ 182   1        {
+ 183   2      
+ 184   2        }
+ 185   1      }
+ 186          #endif
+*** WARNING C294 IN LINE 130 OF source\main.c: unreachable code
+*** WARNING C294 IN LINE 157 OF source\main.c: unreachable code
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE

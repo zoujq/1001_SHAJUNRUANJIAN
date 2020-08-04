@@ -5,6 +5,7 @@
 #include "includes\ca51f3sfr.h"
 #include "includes\ca51f3xsfr.h"
 #include "includes\gpiodef_f3.h"
+#include <stdio.h>
 
 #include "Library\includes\delay.h"
 #include "Library\includes\uart.h"
@@ -91,76 +92,29 @@ void main(void)
 
 	EA = 1;
 
+	//printf("start\n\r");
 	TS_init();	
-	uart_printf("start\n");
+	
+
 	while(1)
 	{		
-
-		uart_printf("0\n");
+		
 		TS_Action();
-#if SUPPORT_WHEEL_SLIDER
-		if(WheelSliderPosition != -1)
-		{
-			//当WheelSliderPosition不等于-1时， 表示滑条或圆环有触摸事件发生。WheelSliderPosition的值表示滑条或圆环的位置。
-		}
-#endif
-#if SUPPORT_KEY
-/*************************************************************************************************
-变量KeysFlagSN是触摸库对外的数据接口，KeysFlagSN的每一位对应一个触摸键的状态，为1表示触摸键触发。可多键同时触发。
-*************************************************************************************************/
+
 		if(KeysFlagSN != 0)
 		{
-			uart_printf("KeysFlagSN%d\n",KeysFlagSN);
-			switch(KeysFlagSN)
-			{
-				case 0x0001:
-					break;
-				case 0x0002:
-					break;
-				case 0x0004:
-					break;
-				//......
-				default:
-					break;
-			}
+			//printf("KeysFlagSN:%X\n\r",KeysFlagSN);
 		}
-#if GENERATE_TS_KEY_EN
-/*************************************************************************************************
-变量TS_Key是根据KeysFlagSN得到的按键信息，以下为按键产生的过程：
-|-----------------------------------------------------------------------------------------------------------------------------------|
-|	单键：以K1为例，K1按键产生的流程如下所示：																																												|
-|																																																																		|
-|					 	|---> K1|KEY_BREAK(短按松开)																																														|
-|	K1(按下)--|																																																												|
-|					 	|---> K1|KEY_LONG_START(长按大约1秒)---> K1|KEY_LONG(一直长按，约每300ms产生一次长按键)---->K1|KEY_LONG_BREAK(长按松开)	|
-|																								 ^																							    |																|
-|																								 |																							    |																|
-|																								 |----------<-----------<------------<--------------|																|
-|-----------------------------------------------------------------------------------------------------------------------------------|
-
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|																																																																																				|
-|	复合键：以K1(K1=0x0001),K2(K2=0x0002)为例， 当K1，K2同时按下时，产生按键为(K1<<5)|K2，即0x22, 产生按键的流程如下所示：																								|
-|																																																																																				|
-|										|---> ((K1<<5)|K2)|KEY_BREAK(短按松开)																																																							|
-|	(K1<<5)|K2(按下)--|																																																																										|
-|										|---> ((K1<<5)|K2)|KEY_LONG_START(长按大约1秒)---> ((K1<<5)|K2)|KEY_LONG(一直长按，约每300ms产生长按键)---->((K1<<5)|K2)|KEY_LONG_BREAK(长按松开)		|
-|																															 		 ^																							           |																					|
-|																																 	 |																							           |																					|
-|																															 		 |---------<-------------<----------------<----------------|																					|
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-																															 
-注意：由于复合键按下时，软件不一定同时检测到双键，而是先检测到单键按下，例如先检测到K1，此时会先产生K1键，等到检测到K2也按
-下时，才会产生按键(K1<<5)|K2，检测到双键后，如果双键一直按下，会产生((K1<<5)|K2)|KEY_LONG_START和((K1<<5)|K2)|KEY_LONG，如果
-有一个键先松手，会停止产生按键， 等到双键都松开时，才会产生((K1<<5)|K2)|KEY_BREAK(短按松开)或((K1<<5)|K2)|KEY_LONG_BREAK(长按松开)
-*************************************************************************************************/
 		if(TS_Key != 0)
 		{
+			//printf("TS_Key:%X\n\r",TS_Key);
 			switch(TS_Key)
 			{
+				
 				//单按键消息
 				case K1:									//K1短按产生的按键消息			
-					break;
+					
+				break;
 				case (K1|KEY_BREAK):      //K1短按松手产生的按键消息
 					break;
 				case (K1|KEY_LONG_START):	//K1长按开始产生的消息（长按约1秒时产生）
@@ -169,80 +123,54 @@ void main(void)
 					break;
 				case (K1|KEY_LONG_BREAK):	//K1长按松手产生的消息
 					break;
-	//单按键消息
-				case K2:									//K1短按产生的按键消息
-					break;
-				case (K2|KEY_BREAK):      //K1短按松手产生的按键消息
-					break;
-				case (K2|KEY_LONG_START):	//K1长按开始产生的消息（长按约1秒时产生）
-					break;
-				case (K2|KEY_LONG):				//K1长按产生的消息（每隔约300ms产生一次）
-					break;
-				case (K2|KEY_LONG_BREAK):	//K1长按松手产生的消息
-					break;
-//单按键消息
-				case K3:									//K1短按产生的按键消息
-					break;
-				case (K3|KEY_BREAK):      //K1短按松手产生的按键消息
-					break;
-				case (K3|KEY_LONG_START):	//K1长按开始产生的消息（长按约1秒时产生）
-					break;
-				case (K3|KEY_LONG):				//K1长按产生的消息（每隔约300ms产生一次）
-					break;
-				case (K3|KEY_LONG_BREAK):	//K1长按松手产生的消息
-					break;
-//单按键消息
-				case K4:									//K1短按产生的按键消息
-					break;
-				case (K4|KEY_BREAK):      //K1短按松手产生的按键消息
-					break;
-				case (K4|KEY_LONG_START):	//K1长按开始产生的消息（长按约1秒时产生）
-					break;
-				case (K4|KEY_LONG):				//K1长按产生的消息（每隔约300ms产生一次）
-					break;
-				case (K4|KEY_LONG_BREAK):	//K1长按松手产生的消息
-					break;
-//单按键消息
-				case K5:									//K1短按产生的按键消息
-					break;
-				case (K5|KEY_BREAK):      //K1短按松手产生的按键消息
-					break;
-				case (K5|KEY_LONG_START):	//K1长按开始产生的消息（长按约1秒时产生）
-					break;
-				case (K5|KEY_LONG):				//K1长按产生的消息（每隔约300ms产生一次）
-					break;
-				case (K5|KEY_LONG_BREAK):	//K1长按松手产生的消息
-					break;
-//单按键消息
-				case K6:									//K1短按产生的按键消息
-					break;
-				case (K6|KEY_BREAK):      //K1短按松手产生的按键消息
-					break;
-				case (K6|KEY_LONG_START):	//K1长按开始产生的消息（长按约1秒时产生）
-					break;
-				case (K6|KEY_LONG):				//K1长按产生的消息（每隔约300ms产生一次）
-					break;
-				case (K6|KEY_LONG_BREAK):	//K1长按松手产生的消息
-					break;
-#if GENERATE_DOUBLE_KEY_EN
-	//复合键消息
-				case (K1<<5)|K2:										//K1和K2同时按下时产生的按键消息
 
-					break;
-				case ((K1<<5)|K2)|KEY_BREAK:				//K1和K2短按松手产生的按键消息
-
-					break;
-				case ((K1<<5)|K2)|KEY_LONG_START:		//K1和K2长按开始产生的按键消息（长按约1秒时产生）
-					break;
-				case ((K1<<5)|K2)|KEY_LONG:					//K1和K2长按产生的消息（每隔约300ms产生一次）
-					break;
-				case ((K1<<5)|K2)|KEY_LONG_BREAK:		//K1和K2长按松手产生的消息
-					break;
-#endif
 			}
 		}
-#endif
-#endif
+
 	}
+
 }
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

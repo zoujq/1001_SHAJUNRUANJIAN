@@ -1,9 +1,9 @@
-C51 COMPILER V9.56.0.0   DEBUG                                                             08/03/2020 17:20:28 PAGE 1   
+C51 COMPILER V9.56.0.0   DEBUG                                                             08/04/2020 11:17:00 PAGE 1   
 
 
 C51 COMPILER V9.56.0.0, COMPILATION OF MODULE DEBUG
 OBJECT MODULE PLACED IN .\hex\debug.obj
-COMPILER INVOKED BY: F:\Keil\C51\BIN\C51.exe TS_Lib\Sources\debug.c OMF2 OPTIMIZE(9,SIZE) BROWSE DEBUG PRINT(.\lst\debug
+COMPILER INVOKED BY: F:\Keil\C51\BIN\C51.EXE TS_Lib\Sources\debug.c OMF2 OPTIMIZE(9,SIZE) BROWSE DEBUG PRINT(.\lst\debug
                     -.lst) TABS(2) OBJECT(.\hex\debug.obj)
 
 line level    source
@@ -27,129 +27,131 @@ line level    source
   15          #include "TS_Lib\Includes\ts_api.h"
   16          #include "TS_Lib\Includes\ts_service.h"      
   17          #if DEBUG
-              #include "Library\Includes\i2c.h"   
-              void I2C_ISR(void);
-              #endif
+  18          #include "Library\Includes\i2c.h"   
+  19          void I2C_ISR(void);
+  20          #endif
   21          /*********************************************************************************************************
              -************/
   22          #if DEBUG
-              #define I2C_ADDR    0xCA
-              unsigned char xdata TouchDebugID = '3';
-              unsigned char rxOffset;
-              unsigned char regAddr;
-              bit iicReadMode;
-              extern TSState_T            xdata   TS_State_Debug;
-              extern unsigned char        xdata   Key_Cnt_Debug;
-              extern unsigned char        xdata   TS_CH_Debug[OPENED_TS_COUNT]; 
-              extern unsigned int         xdata   TS_RefChBaseLineData;
-              extern unsigned int         xdata   TS_RefPostData;
-              extern unsigned long int   xdata  KeysFlagSN_Debug;
-              code unsigned char *TS_INFO[]=
-              {
-                &TouchDebugID,
-                &TS_State_Debug,
-                &Key_Cnt_Debug,
-                &TS_RefChBaseLineData,
-                &TS_RefPostData,
-                &KeysFlagSN_Debug,
-                &TS_BaseLineData[0],
-                &TS_PostData[0],
-                &TSKey_FingerThd[0],
-                &TS_CH_Debug[0],
-              };
-              unsigned char *pTS_Info;
-              void I2C_ISR(void)
-              {
-                unsigned char Sta_Temp;
-                TouchDebugID = '3';       
-C51 COMPILER V9.56.0.0   DEBUG                                                             08/03/2020 17:20:28 PAGE 2   
+  23          #define I2C_ADDR    0xCA
+  24          unsigned char xdata TouchDebugID = '3';
+  25          unsigned char rxOffset;
+  26          unsigned char regAddr;
+  27          bit iicReadMode;
+  28          extern TSState_T            xdata   TS_State_Debug;
+  29          extern unsigned char        xdata   Key_Cnt_Debug;
+  30          extern unsigned char        xdata   TS_CH_Debug[OPENED_TS_COUNT]; 
+  31          extern unsigned int         xdata   TS_RefChBaseLineData;
+  32          extern unsigned int         xdata   TS_RefPostData;
+  33          extern unsigned long int   xdata  KeysFlagSN_Debug;
+  34          code unsigned char *TS_INFO[]=
+  35          {
+  36            &TouchDebugID,
+  37            &TS_State_Debug,
+  38            &Key_Cnt_Debug,
+  39            &TS_RefChBaseLineData,
+  40            &TS_RefPostData,
+  41            &KeysFlagSN_Debug,
+  42            &TS_BaseLineData[0],
+  43            &TS_PostData[0],
+  44            &TSKey_FingerThd[0],
+  45            &TS_CH_Debug[0],
+  46          };
+  47          unsigned char *pTS_Info;
+  48          void I2C_ISR(void)
+  49          {
+  50   1        unsigned char Sta_Temp;
+  51   1        TouchDebugID = '3';       
+C51 COMPILER V9.56.0.0   DEBUG                                                             08/04/2020 11:17:00 PAGE 2   
 
-                Sta_Temp = I2CSTA;      
-                if(Sta_Temp == 0x60)         //接收到从机地址+写位
-                {     
-                  rxOffset = 0xff;
-                  iicReadMode = 0;
-                  I2CCON |= AAK(1);     
-                }
-                else if(Sta_Temp == 0x80)        
-                {         
-                  if(iicReadMode)         //发送一字节数据
-                  {
-                    rxOffset++;
-                    I2CDAT = *(pTS_Info+rxOffset);      
-                  }
-                  else                  //接收到一字节数据
-                  {       
-                    if(rxOffset == 0xff)    //地址
-                    {
-                      regAddr=I2CDAT;  
-                      pTS_Info = TS_INFO[regAddr];
-                      rxOffset=0;
-                      I2CCON |= AAK(1);
-                    }
-                    else              //数据
-                    {
-                      *(pTS_Info+rxOffset) = I2CDAT;
-                      rxOffset++; 
-                      I2CCON |= AAK(1);   
-                    }
-                  } 
-                }
-                else if(Sta_Temp==0xA8)       //接收到从机地址+读位，发送ACK信号
-                {               
-                  I2CDAT = *(pTS_Info+rxOffset);
-                  iicReadMode = 1;
-                }
-                else if(Sta_Temp == 0x88) 
-                {
-                }
-                I2CFLG  |= I2CF;
-              }
-              void Debug_init(void)
-              {
-              #ifdef  I2C_SELECT_P30_P31
+  52   1        Sta_Temp = I2CSTA;      
+  53   1        if(Sta_Temp == 0x60)         //接收到从机地址+写位
+  54   1        {     
+  55   2          rxOffset = 0xff;
+  56   2          iicReadMode = 0;
+  57   2          I2CCON |= AAK(1);     
+  58   2        }
+  59   1        else if(Sta_Temp == 0x80)        
+  60   1        {         
+  61   2          if(iicReadMode)         //发送一字节数据
+  62   2          {
+  63   3            rxOffset++;
+  64   3            I2CDAT = *(pTS_Info+rxOffset);      
+  65   3          }
+  66   2          else                  //接收到一字节数据
+  67   2          {       
+  68   3            if(rxOffset == 0xff)    //地址
+  69   3            {
+  70   4              regAddr=I2CDAT;  
+  71   4              pTS_Info = TS_INFO[regAddr];
+  72   4              rxOffset=0;
+  73   4              I2CCON |= AAK(1);
+  74   4            }
+  75   3            else              //数据
+  76   3            {
+  77   4              *(pTS_Info+rxOffset) = I2CDAT;
+  78   4              rxOffset++; 
+  79   4              I2CCON |= AAK(1);   
+  80   4            }
+  81   3          } 
+  82   2        }
+  83   1        else if(Sta_Temp==0xA8)       //接收到从机地址+读位，发送ACK信号
+  84   1        {               
+  85   2          I2CDAT = *(pTS_Info+rxOffset);
+  86   2          iicReadMode = 1;
+  87   2        }
+  88   1        else if(Sta_Temp == 0x88) 
+  89   1        {
+  90   2        }
+  91   1        I2CFLG  |= I2CF;
+  92   1      }
+  93          void Debug_init(void)
+  94          {
+  95   1      #ifdef  I2C_SELECT_P30_P31
                 I2CIOS = 0;
                 GPIO_Init(P30F,P30_I2C_SDA_SETTING);
                 GPIO_Init(P31F,P31_I2C_SCL_SETTING);
               #elif defined I2C_SELECT_P11_P12
-                I2CIOS = 1;
-                GPIO_Init(P11F,P11_I2C_SDA_SETTING);
-                GPIO_Init(P12F,P12_I2C_SCL_SETTING);
-              #endif
-                I2CCON = I2CE(1) | I2CIE(1) | STA(0) | STP(0)| CKHD(0) | AAK(1)| CBSE(0) | STFE(0);   
-                I2CADR = (I2C_ADDR>>1);
-                I2CCR = 0x20;
-                
-                INT6EN = 1;
-                EXIP |= (1<<4);     //优先级设置为最高
-              }
-              void Debug_ParamLoad(void)
-              {
-                unsigned char i;
-C51 COMPILER V9.56.0.0   DEBUG                                                             08/03/2020 17:20:28 PAGE 3   
+ 100   1        I2CIOS = 1;
+ 101   1        GPIO_Init(P11F,P11_I2C_SDA_SETTING);
+ 102   1        GPIO_Init(P12F,P12_I2C_SCL_SETTING);
+ 103   1        P11C &= ~0x20;  
+ 104   1        P12C &= ~0x20;
+ 105   1      #endif
+ 106   1        I2CCON = I2CE(1) | I2CIE(1) | STA(0) | STP(0)| CKHD(0) | AAK(1)| CBSE(0) | STFE(0);   
+ 107   1        I2CADR = (I2C_ADDR>>1);
+ 108   1        I2CCR = 0x20;
+ 109   1        
+ 110   1        INT6EN = 1;
+ 111   1        EXIP |= (1<<4);     //优先级设置为最高
+ 112   1      }
+ 113          void Debug_ParamLoad(void)
+C51 COMPILER V9.56.0.0   DEBUG                                                             08/04/2020 11:17:00 PAGE 3   
 
-                KeysFlagSN_Debug = (unsigned long int)KeysFlagSN;
-                TS_State_Debug = TS_State;
-                Key_Cnt_Debug = KEY_CH_COUNT;
-                for(i = 0; i < KEY_CH_COUNT; i++)
-                {
-                  TS_CH_Debug[i] = TS_CH[i];
-                }
-                TS_RefPostData  = TS_PostData[OPENED_TS_COUNT]; 
-                TS_RefChBaseLineData  = TS_RefPostData; 
-              }
-              #endif
- 125          #endif
+ 114          {
+ 115   1        unsigned char i;
+ 116   1        KeysFlagSN_Debug = (unsigned long int)KeysFlagSN;
+ 117   1        TS_State_Debug = TS_State;
+ 118   1        Key_Cnt_Debug = KEY_CH_COUNT;
+ 119   1        for(i = 0; i < KEY_CH_COUNT; i++)
+ 120   1        {
+ 121   2          TS_CH_Debug[i] = TS_CH[i];
+ 122   2        }
+ 123   1        TS_RefPostData  = TS_PostData[OPENED_TS_COUNT]; 
+ 124   1        TS_RefChBaseLineData  = TS_RefPostData; 
+ 125   1      }
+ 126          #endif
+ 127          #endif
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   ----    ----
-   CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =   ----    ----
+   CODE SIZE        =    253    ----
+   CONSTANT SIZE    =     30    ----
+   XDATA SIZE       =      1    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----    ----
+   DATA SIZE        =      5    ----
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =   ----    ----
+   BIT SIZE         =      1    ----
    EDATA SIZE       =   ----    ----
    HDATA SIZE       =   ----    ----
    XDATA CONST SIZE =   ----    ----

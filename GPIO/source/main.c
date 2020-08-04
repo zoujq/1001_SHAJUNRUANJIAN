@@ -12,7 +12,18 @@
 #include "include/delay.h"
 #include "include/adc.h"
 #include <intrins.h>
+#include <string.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <absacc.h>
 
+/*********************************************************************************************************************/
+#include "TS_Lib\Includes\ts_configuration.h"
+#include "TS_Lib\Includes\ts_def.h"
+#include "TS_Lib\Includes\ts_api.h"
+#include "TS_Lib\Includes\ts_service.h"		   
+/*********************************************************************************************************************/
 unsigned char read_inner_trim(void)				
 {
 	unsigned char value;
